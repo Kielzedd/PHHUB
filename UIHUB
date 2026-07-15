@@ -13,11 +13,6 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- ================= VERSION CONTROL SYSTEM =================
-local CURRENT_VERSION = "3.0.4"
--- PALITAN MO ITO ng direct raw link ng version.txt mo sa GitHub
-local VERSION_URL = "https://raw.githubusercontent.com/Kielzedd/PHHUB/main/version.txt" 
-
 -- Safe GUI routing
 local ParentGui = nil
 pcall(function() ParentGui = game:GetService("CoreGui") end)
@@ -58,7 +53,7 @@ local sounds = {
     tab = function() playAudio(12221967, 1.4, 0.3) end,
     toggleOn = function() playAudio(12221967, 2.0, 0.4) end,
     toggleOff = function() playAudio(12221967, 0.8, 0.4) end,
-    alert = function() playAudio(6118151110, 1.0, 0.8) end -- Tunog para sa update
+    alert = function() playAudio(6118151110, 1.0, 0.8) end
 }
 
 -- ================= TRANSLATION ENGINE =================
@@ -694,96 +689,5 @@ local function startLoader()
     end)
 end
 
--- ================= LIVE GITHUB UPDATE CHECKER =================
-local function triggerUpdateNotice(newVersion)
-    sounds.alert()
-    local UpdateFrame = Instance.new("Frame")
-    UpdateFrame.Name = "UpdateScreen"
-    UpdateFrame.Size = UDim2.new(0, 420, 0, 200)
-    UpdateFrame.Position = UDim2.new(0.5, -210, 0.5, -100)
-    UpdateFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
-    UpdateFrame.BorderSizePixel = 0
-    UpdateFrame.ZIndex = 100
-    UpdateFrame.Parent = ScreenGui
-
-    local UpdateCorner = Instance.new("UICorner")
-    UpdateCorner.CornerRadius = UDim.new(0, 18)
-    UpdateCorner.Parent = UpdateFrame
-
-    local UpdateStroke = Instance.new("UIStroke")
-    UpdateStroke.Thickness = 2
-    UpdateStroke.Color = Color3.fromRGB(255, 50, 50)
-    UpdateStroke.Parent = UpdateFrame
-    
-    task.spawn(function()
-        while UpdateFrame.Parent do
-            TweenService:Create(UpdateStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 150, 0)}):Play()
-            task.wait(1)
-            TweenService:Create(UpdateStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 50, 50)}):Play()
-            task.wait(1)
-        end
-    end)
-
-    local HeaderTxt = Instance.new("TextLabel")
-    HeaderTxt.Size = UDim2.new(1, 0, 0, 40)
-    HeaderTxt.Position = UDim2.new(0, 0, 0, 15)
-    HeaderTxt.BackgroundTransparency = 1
-    HeaderTxt.Text = "🚨 SCRIPT UPDATE DETECTED 🚨"
-    HeaderTxt.TextColor3 = Color3.fromRGB(255, 50, 50)
-    HeaderTxt.TextSize = 18
-    HeaderTxt.Font = Enum.Font.GothamBold
-    HeaderTxt.ZIndex = 101
-    HeaderTxt.Parent = UpdateFrame
-
-    local InfoTxt = Instance.new("TextLabel")
-    InfoTxt.Size = UDim2.new(1, -40, 0, 80)
-    InfoTxt.Position = UDim2.new(0, 20, 0, 55)
-    InfoTxt.BackgroundTransparency = 1
-    InfoTxt.Text = "A new version of PHHUB is available (v" .. newVersion .. ").\nPlease re-execute the script from your executor to apply the latest changes and bypasses."
-    InfoTxt.TextColor3 = Color3.fromRGB(180, 185, 200)
-    InfoTxt.TextSize = 13
-    InfoTxt.Font = Enum.Font.GothamMedium
-    InfoTxt.TextWrapped = true
-    InfoTxt.ZIndex = 101
-    InfoTxt.Parent = UpdateFrame
-
-    local CloseUpdBtn = Instance.new("TextButton")
-    CloseUpdBtn.Size = UDim2.new(1, -40, 0, 35)
-    CloseUpdBtn.Position = UDim2.new(0, 20, 1, -50)
-    CloseUpdBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    CloseUpdBtn.Text = "UNDERSTOOD"
-    CloseUpdBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseUpdBtn.TextSize = 12
-    CloseUpdBtn.Font = Enum.Font.GothamBold
-    CloseUpdBtn.ZIndex = 101
-    CloseUpdBtn.Parent = UpdateFrame
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 8)
-    BtnCorner.Parent = CloseUpdBtn
-
-    CloseUpdBtn.MouseButton1Click:Connect(function()
-        UpdateFrame:Destroy()
-    end)
-end
-
--- Update Loop Logic
-task.spawn(function()
-    while true do
-        task.wait(60) -- Checheck niya kung may update sa github tuwing 60 seconds
-        pcall(function()
-            local liveVersion = game:HttpGet(VERSION_URL)
-            if liveVersion then
-liveVersion = string.gsub(liveVersion, "^%s*(.-)%s*$", "%1") 
-                    if liveVersion ~= "" and liveVersion ~= CURRENT_VERSION then
-                        triggerUpdateNotice(liveVersion)
-                        break -- Papatayin na ang loop para hindi mag-spam yung notice
-                    end
-                end
-            end)
-        end
-    end)
-
--- Start immediately since notice is removed
+-- Simulan agad ang pag-load nang walang inaasahang version check sa internet
 startLoader()
-                -- Tinatanggal yung mga extra spaces o next line characters
