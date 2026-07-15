@@ -1,0 +1,413 @@
+-- PHHUB v3.0 Ultimate Edition (Roblox Executor Version)
+-- Supports: Krnl, Synapse, Fluxus, Delta, etc.
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Iwasan ang duplicate kung i-eexecute ulit
+local existing = CoreGui:FindFirstChild("PHHUB_v3")
+if existing then existing:Destroy() end
+
+-- Helper Function para mas mabilis gumawa ng UI
+local function create(className, properties)
+    local inst = Instance.new(className)
+    for k, v in pairs(properties or {}) do
+        inst[k] = v
+    end
+    return inst
+end
+
+-- ================= AUDIO / PHONK SETUP =================
+-- Nilipat sa SoundService para maiwasan ang audio block ng ibang executors
+local phonkSound = create("Sound", {
+    SoundId = "rbxassetid://9047102604", 
+    Volume = 0.5,
+    Looped = true,
+    Parent = SoundService
+})
+local clickSound = create("Sound", {
+    SoundId = "rbxassetid://12222200", -- Gumagamit ng default roblox button sound na laging gumagana
+    Volume = 1,
+    Parent = SoundService
+})
+
+-- ================= LANGUAGE DICTIONARY =================
+local isTagalog = false
+local lang = {
+    en = {
+        farm = "🌾 Farming", prog = "🔁 Progression", set = "⚙️ Settings",
+        auto = "🌾 Activate Auto Farm", aura = "⚔️ Kill Aura",
+        rebirth = "🔁 Fast Auto Rebirth", train = "💪 Auto-Train Stats",
+        fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip",
+        dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt",
+        trans = "🇺🇸 Tagalog", phonk = "🎵 Play Phonk"
+    },
+    tl = {
+        farm = "🌾 Pag-Farm", prog = "🔁 Pag-Unlad", set = "⚙️ Mga Setting",
+        auto = "🌾 Kusang Farm", aura = "⚔️ Patay Aura",
+        rebirth = "🔁 Mabilis na Rebirth", train = "💪 Sanayin ang Stats",
+        fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)",
+        dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt",
+        trans = "🇵🇭 English", phonk = "🎵 Patugtugin Phonk"
+    }
+}
+
+-- ================= MAIN UI CREATION =================
+local ScreenGui = create("ScreenGui", { Name = "PHHUB_v3", Parent = (gethui and gethui()) or CoreGui })
+
+-- Ang Base Menu
+local BaseMenu = create("Frame", {
+    Name = "BaseMenu",
+    Size = UDim2.new(0, 500, 0, 300),
+    Position = UDim2.new(0.5, -250, 0.5, -150),
+    BackgroundColor3 = Color3.fromRGB(17, 18, 22),
+    BackgroundTransparency = 0.15,
+    BorderSizePixel = 0,
+    ClipsDescendants = true,
+    Parent = ScreenGui
+})
+local BaseCorner = create("UICorner", { CornerRadius = UDim.new(0, 14), Parent = BaseMenu })
+local BaseStroke = create("UIStroke", { Color = Color3.fromRGB(62, 68, 81), Thickness = 1, Parent = BaseMenu })
+
+-- Floating Box Logo
+local MiniBox = create("TextButton", {
+    Size = UDim2.new(0, 60, 0, 60),
+    Position = UDim2.new(0.5, -30, 0.5, -30),
+    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+    Text = "PH",
+    TextColor3 = Color3.fromRGB(252, 209, 22),
+    TextSize = 24,
+    Font = Enum.Font.GothamBlack,
+    Visible = false,
+    Parent = ScreenGui
+})
+create("UICorner", { CornerRadius = UDim.new(0, 16), Parent = MiniBox })
+create("UIStroke", { Color = Color3.fromRGB(252, 209, 22), Thickness = 2, Parent = MiniBox })
+create("UIGradient", {
+    Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 56, 168)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(206, 17, 38)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(206, 17, 38))
+    },
+    Rotation = 45,
+    Parent = MiniBox
+})
+
+-- Header
+local Header = create("Frame", {
+    Size = UDim2.new(1, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(20, 21, 28),
+    BackgroundTransparency = 0.3,
+    BorderSizePixel = 0,
+    Parent = BaseMenu
+})
+local HeaderTitle = create("TextLabel", {
+    Size = UDim2.new(0, 200, 1, 0), Position = UDim2.new(0, 15, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "PHHUB v3.0",
+    TextColor3 = Color3.fromRGB(252, 209, 22),
+    TextSize = 16, Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent = Header
+})
+local MinBtn = create("TextButton", {
+    Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -70, 0, 5),
+    BackgroundTransparency = 1, Text = "—", TextColor3 = Color3.fromRGB(160, 165, 181), TextSize = 18, Font = Enum.Font.GothamBold, Parent = Header
+})
+local CloseBtn = create("TextButton", {
+    Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -35, 0, 5),
+    BackgroundTransparency = 1, Text = "X", TextColor3 = Color3.fromRGB(243, 139, 168), TextSize = 14, Font = Enum.Font.GothamBold, Parent = Header
+})
+
+-- Sidebar
+local Sidebar = create("Frame", {
+    Size = UDim2.new(0, 130, 1, -40), Position = UDim2.new(0, 0, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(15, 16, 20), BackgroundTransparency = 0.5, BorderSizePixel = 0, Parent = BaseMenu
+})
+local TabLayout = create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = Sidebar })
+create("UIPadding", { PaddingTop = UDim.new(0, 10), Parent = Sidebar })
+
+-- Main Content Area
+local Content = create("Frame", {
+    Size = UDim2.new(1, -130, 1, -40), Position = UDim2.new(0, 130, 0, 40),
+    BackgroundTransparency = 1, Parent = BaseMenu
+})
+
+-- ================= TAB LOGIC & BUTTON CREATOR =================
+local tabs = {}
+local tabButtons = {}
+local phonkPlaying = false
+
+local function createCheatButton(parent, text, callback)
+    local btn = create("TextButton", {
+        Size = UDim2.new(0.48, 0, 0, 40),
+        BackgroundColor3 = Color3.fromRGB(40, 43, 54),
+        Text = text, TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 12, Font = Enum.Font.GothamBold,
+        AutoButtonColor = false, Parent = parent
+    })
+    create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn })
+    create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9, Parent = btn })
+    
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        clickSound:Play()
+        active = not active
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = active and Color3.fromRGB(49, 176, 87) or Color3.fromRGB(40, 43, 54)
+        }):Play()
+        if callback then callback(active) end
+    end)
+    return btn
+end
+
+-- Custom Input Creator
+local function createCheatTextBox(parent, placeholder, callback)
+    local container = create("Frame", {
+        Size = UDim2.new(0.48, 0, 0, 40),
+        BackgroundColor3 = Color3.fromRGB(40, 43, 54),
+        Parent = parent
+    })
+    create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = container })
+    create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9, Parent = container })
+    
+    local textBox = create("TextBox", {
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        PlaceholderText = placeholder,
+        PlaceholderColor3 = Color3.fromRGB(160, 165, 181),
+        Text = "",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        ClearTextOnFocus = true,
+        Parent = container
+    })
+    
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            clickSound:Play()
+            if callback then callback(textBox.Text) end
+        end
+    end)
+    return container
+end
+
+-- Create Tabs
+local FarmTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = true, Parent = Content })
+local ProgTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = Content })
+local SetTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = Content })
+
+create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = FarmTab })
+create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = FarmTab })
+create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = ProgTab })
+create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = ProgTab })
+create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = SetTab })
+create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = SetTab })
+
+tabs.farm = FarmTab; tabs.prog = ProgTab; tabs.set = SetTab
+
+-- ================= CHEAT SCRIPTS =================
+
+local btnAuto = createCheatButton(FarmTab, lang.en.auto, function(state) print("Auto Farm: " .. tostring(state)) end)
+local btnAura = createCheatButton(FarmTab, lang.en.aura, function(state) print("Kill Aura: " .. tostring(state)) end)
+local btnRebirth = createCheatButton(ProgTab, lang.en.rebirth, function(state) print("Rebirth: " .. tostring(state)) end)
+local btnTrain = createCheatButton(ProgTab, lang.en.train, function(state) print("Train: " .. tostring(state)) end)
+
+-- FLY SCRIPT (Ginamit ko yung sikat na Fly GUI V3 mula Github na gumagana sa Mobile at PC)
+local btnFly = createCheatButton(SetTab, lang.en.fly, function(state)
+    -- Kapag pinindot, magloload siya ng maliit na fly menu sa screen na easy gamitin
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end)
+end)
+
+-- NOCLIP SCRIPT
+local noclipConnection
+local btnNoclip = createCheatButton(SetTab, lang.en.noclip, function(state)
+    if state then
+        noclipConnection = RunService.Stepped:Connect(function()
+            local character = LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+    end
+end)
+
+local btnDex = createCheatButton(SetTab, lang.en.dex, function(state)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
+end)
+
+-- COBALT LOADSTRING
+local btnCobalt = createCheatButton(SetTab, lang.en.cobalt, function(state)
+    task.spawn(function()
+        pcall(function()
+            loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))()
+        end)
+    end)
+end)
+
+-- SPEED INPUT BOX
+createCheatTextBox(SetTab, "⚡ Speed (E.g. 50)", function(value)
+    local speed = tonumber(value)
+    if speed then
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.WalkSpeed = speed end
+        end
+    end
+end)
+
+-- SOUND ID INPUT BOX
+createCheatTextBox(SetTab, "🎵 Sound ID Input", function(value)
+    local cleanId = value:match("%d+")
+    if cleanId then
+        phonkSound.SoundId = "rbxassetid://" .. cleanId
+        if phonkPlaying then
+            phonkSound:Stop()
+            phonkSound:Play()
+        end
+    end
+end)
+
+-- Translate Button
+local btnTrans = createCheatButton(SetTab, lang.en.trans, function()
+    isTagalog = not isTagalog
+    local l = isTagalog and lang.tl or lang.en
+    tabButtons.farm.Text = l.farm; tabButtons.prog.Text = l.prog; tabButtons.set.Text = l.set
+    btnAuto.Text = l.auto; btnAura.Text = l.aura
+    btnRebirth.Text = l.rebirth; btnTrain.Text = l.train
+    btnFly.Text = l.fly; btnNoclip.Text = l.noclip
+    btnDex.Text = l.dex; btnCobalt.Text = l.cobalt
+    btnTrans.Text = l.trans
+end)
+
+-- Phonk Music Toggle
+local btnPhonk = createCheatButton(SetTab, lang.en.phonk, function(state)
+    phonkPlaying = state
+    if phonkPlaying then
+        phonkSound:Play()
+    else
+        phonkSound:Stop()
+    end
+end)
+
+-- ================= TAB SWITCHER =================
+local function switchTab(tabId)
+    for k, v in pairs(tabs) do v.Visible = false end
+    tabs[tabId].Visible = true
+end
+
+local function createNavBtn(id, text)
+    local btn = create("TextButton", {
+        Size = UDim2.new(0.9, 0, 0, 30), BackgroundTransparency = 1,
+        Text = text, TextColor3 = Color3.fromRGB(205, 214, 244),
+        TextSize = 13, Font = Enum.Font.GothamBold, Parent = Sidebar
+    })
+    btn.MouseButton1Click:Connect(function() clickSound:Play() switchTab(id) end)
+    tabButtons[id] = btn
+end
+
+createNavBtn("farm", lang.en.farm)
+createNavBtn("prog", lang.en.prog)
+createNavBtn("set", lang.en.set)
+
+-- ================= MORPHING, DRAG & MINIMIZE LOGIC =================
+local isMinimized = false
+local dragging = false
+local savedMenuPos = BaseMenu.Position
+local savedMiniPos = nil -- Dito ise-save ang huling posisyon ng MiniBox
+
+MinBtn.MouseButton1Click:Connect(function()
+    clickSound:Play()
+    isMinimized = true
+    savedMenuPos = BaseMenu.Position -- I-save ang current posisyon ng menu
+
+    TweenService:Create(BaseMenu, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+    task.wait(0.3)
+    BaseMenu.Visible = false
+    MiniBox.Visible = true
+    
+    -- Kapag may naka-save na pwesto ang MiniBox, dun siya pupunta. Kung wala, sa gitna siya lilitaw.
+    if savedMiniPos then
+        MiniBox.Position = savedMiniPos
+    else
+        MiniBox.Position = UDim2.new(0, BaseMenu.AbsolutePosition.X + 220, 0, BaseMenu.AbsolutePosition.Y + 120)
+    end
+end)
+
+MiniBox.MouseButton1Click:Connect(function()
+    if dragging then return end
+    clickSound:Play()
+    isMinimized = false
+    
+    savedMiniPos = MiniBox.Position -- I-save kung saan naiwan sa gilid ang MiniBox
+
+    MiniBox.Visible = false
+    BaseMenu.Visible = true
+    BaseMenu.Position = savedMenuPos -- Ibalik kung saan huling naiwan ang Main Menu
+    
+    TweenService:Create(BaseMenu, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 300)}):Play()
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    clickSound:Play()
+    phonkSound:Stop()
+    if noclipConnection then noclipConnection:Disconnect() end
+    ScreenGui:Destroy()
+end)
+
+-- UNIVERSAL INSTANT DRAGGING FUNCTION (Para mas mabilis sumunod)
+local function enableInstantDrag(frame)
+    local dragToggle = false
+    local dragStart = nil
+    local startPos = nil
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                    task.wait(0.1)
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragToggle then
+                dragging = true
+                local delta = input.Position - dragStart
+                -- Instant na lilipat ang UI, walang delay ng TweenService
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end
+    end)
+end
+
+enableInstantDrag(Header) -- Main Menu Header drag
+enableInstantDrag(MiniBox) -- MiniBox drag
