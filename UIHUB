@@ -1,22 +1,17 @@
--- PHHUB v3.0 Ultimate Roblox UI (Aura Cyberpunk Edition)
+-- PHHUB v3.0 Ultimate Roblox UI (Aura Cyberpunk Edition - 1-to-1 JS Port)
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Humanap ng ligtas na paglalagyan ng UI (CoreGui para sa exploit, PlayerGui para sa Studio)
+-- Safe CoreGui/PlayerGui routing
 local ParentGui = nil
-pcall(function()
-    ParentGui = game:GetService("CoreGui")
-end)
-if not ParentGui then
-    ParentGui = PlayerGui
-end
+pcall(function() ParentGui = game:GetService("CoreGui") end)
+if not ParentGui then ParentGui = PlayerGui end
 
--- Tanggalin ang lumang UI para walang overlap
+-- Clean previous UI instances
 if ParentGui:FindFirstChild("PHHUB_v3_Roblox") then
     ParentGui["PHHUB_v3_Roblox"]:Destroy()
 end
@@ -28,7 +23,7 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = ParentGui
 
--- ================= SOUND CONTROLLERS =================
+-- ================= SYNTHESIZED SOUND SYSTEM =================
 local function playAudio(assetId, pitch, volume)
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://" .. tostring(assetId)
@@ -43,10 +38,8 @@ local sounds = {
     loading = function() playAudio(12222124, 1.2, 0.4) end,
     success = function() 
         task.spawn(function()
-            playAudio(12221967, 1.2, 0.4)
-            task.wait(0.1)
-            playAudio(12221967, 1.5, 0.4)
-            task.wait(0.1)
+            playAudio(12221967, 1.2, 0.4) task.wait(0.1)
+            playAudio(12221967, 1.5, 0.4) task.wait(0.1)
             playAudio(12221967, 1.8, 0.5)
         end)
     end,
@@ -55,48 +48,73 @@ local sounds = {
     toggleOff = function() playAudio(12221967, 0.8, 0.4) end
 }
 
--- ================= DRAG ENGINE FUNCTION =================
-local function makeDraggable(frame, handle)
-    local dragging = false
-    local dragInput, dragStart, startPos
+-- ================= TRANSLATION ENGINE & REGISTRY =================
+local isTagalog = false
+local registeredElements = {} -- Stores UI components that need translation
 
-    local function update(input)
-        local delta = input.Position - dragStart
-        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local lang = {
+    en = {
+        farm = "🌾 Farming", prog = "🔁 Progression", set = "⚙️ Settings",
+        auto = "🌾 Auto Farm", aura = "⚔️ Kill Aura",
+        rebirth = "🔁 Auto Rebirth", train = "💪 Auto-Train Stats",
+        fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip",
+        dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt",
+        trans = "🇵🇭 Tagalog", phonk = "🎵 Play Phonk",
+        speed = "⚡ Speed (E.g. 50)", sound = "🎵 Sound ID Input"
+    },
+    tl = {
+        farm = "🌾 Pag-Farm", prog = "🔁 Pag-Unlad", set = "⚙️ Mga Setting",
+        auto = "🌾 Kusang Farm", aura = "⚔️ Patay Aura",
+        rebirth = "🔁 Auto Rebirth", train = "💪 Sanayin ang Stats",
+        fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)",
+        dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt",
+        trans = "🇺🇸 English", phonk = "🎵 Patugtugin Phonk",
+        speed = "⚡ Bilis (Hal. 50)", sound = "🎵 Sound ID"
+    }
+}
+
+local function updateLanguage()
+    local selected = isTagalog and lang.tl or lang.en
+    for element, key in pairs(registeredElements) do
+        if element:IsA("TextLabel") or element:IsA("TextButton") then
+            element.Text = selected[key]
+        elseif element:IsA("TextBox") then
+            element.PlaceholderText = selected[key]
+        end
     end
+end
 
+-- ================= DRAG ENGINE (SMOOTH & SECURE) =================
+local function makeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
     handle.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            update(input)
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
 
--- ================= CREATING THE MAIN UI FRAME =================
+-- ================= MAIN UI FRAME =================
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160) -- Center Screen
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
 MainFrame.BackgroundTransparency = 0.04
 MainFrame.Visible = false
@@ -108,25 +126,19 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 18)
 MainCorner.Parent = MainFrame
 
--- Animated UI Stroke Aura
+-- Cyberpunk Aura Glowing Border
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Thickness = 2.5
 MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 MainStroke.Color = Color3.fromRGB(252, 209, 22)
 MainStroke.Parent = MainFrame
 
--- Breathing Aura Loop
 task.spawn(function()
-    local auraColors = {
-        Color3.fromRGB(252, 209, 22), -- Neon Gold
-        Color3.fromRGB(255, 0, 85),   -- Crimson Red
-        Color3.fromRGB(0, 150, 255)   -- Cyber Cyan
-    }
+    local auraColors = {Color3.fromRGB(252, 209, 22), Color3.fromRGB(255, 0, 85), Color3.fromRGB(0, 150, 255)}
     local counter = 1
     while ScreenGui.Parent do
         local nextColor = auraColors[counter]
-        local tweenInfo = TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-        local tween = TweenService:Create(MainStroke, tweenInfo, {Color = nextColor})
+        local tween = TweenService:Create(MainStroke, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = nextColor})
         tween:Play()
         tween.Completed:Wait()
         counter = counter % #auraColors + 1
@@ -135,7 +147,6 @@ end)
 
 -- Header Bar
 local Header = Instance.new("Frame")
-Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 48)
 Header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
 Header.BorderSizePixel = 0
@@ -145,7 +156,6 @@ local HeaderCorner = Instance.new("UICorner")
 HeaderCorner.CornerRadius = UDim.new(0, 18)
 HeaderCorner.Parent = Header
 
--- Drag capability on the header
 makeDraggable(MainFrame, Header)
 
 local Title = Instance.new("TextLabel")
@@ -159,7 +169,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- Control Buttons (Minimize & Close)
+-- Window Controls
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -70, 0.5, -15)
@@ -180,7 +190,7 @@ CloseBtn.TextSize = 16
 CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Parent = Header
 
--- Content Layout Inside MainFrame
+-- Sidebar Layout
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 140, 1, -48)
 Sidebar.Position = UDim2.new(0, 0, 0, 48)
@@ -188,37 +198,55 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
+-- Content Frame Container
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -140, 1, -48)
 ContentArea.Position = UDim2.new(0, 140, 0, 48)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
--- Tab Frames Container
+-- ================= PREMIUM SYSTEM TAB GENERATOR =================
 local Tabs = {}
 local TabButtons = {}
 
-local function createTab(name, index)
-    local TabFrame = Instance.new("Frame")
+local function createTab(nameKey, index)
+    -- Ginamit natin ay ScrollingFrame para hinding-hindi na mag-overlap ang UI kahit marami ang buttons!
+    local TabFrame = Instance.new("ScrollingFrame")
     TabFrame.Size = UDim2.new(1, 0, 1, 0)
     TabFrame.BackgroundTransparency = 1
+    TabFrame.BorderSizePixel = 0
+    TabFrame.ScrollBarThickness = 3
+    TabFrame.ScrollBarImageColor3 = Color3.fromRGB(252, 209, 22)
     TabFrame.Visible = (index == 1)
+    TabFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabFrame.Parent = ContentArea
     
-    -- Auto grid sorting inside the tab
+    -- Pixel-Perfect Grid Layout (2 columns, walang siksikan)
     local UIGrid = Instance.new("UIGridLayout")
-    UIGrid.CellSize = UDim2.new(0.5, -10, 0, 48)
+    UIGrid.CellSize = UDim2.new(0.5, -5, 0, 48)
     UIGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+    UIGrid.SortOrder = Enum.SortOrder.LayoutOrder
     UIGrid.Parent = TabFrame
     
+    local UIPadding = Instance.new("UIPadding")
+    UIPadding.PaddingLeft = UDim.new(0, 10)
+    UIPadding.PaddingRight = UDim.new(0, 10)
+    UIPadding.PaddingTop = UDim.new(0, 10)
+    UIPadding.PaddingBottom = UDim.new(0, 10)
+    UIPadding.Parent = TabFrame
+
+    -- Navigation Sidebar Button
     local TabBtn = Instance.new("TextButton")
     TabBtn.Size = UDim2.new(1, 0, 0, 40)
     TabBtn.BackgroundTransparency = 1
-    TabBtn.Text = name
+    TabBtn.Text = lang.en[nameKey]
     TabBtn.TextColor3 = (index == 1) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
     TabBtn.TextSize = 13
     TabBtn.Font = Enum.Font.SourceSansBold
     TabBtn.Parent = Sidebar
+    
+    registeredElements[TabBtn] = nameKey
     
     TabBtn.MouseButton1Click:Connect(function()
         sounds.tab()
@@ -233,12 +261,14 @@ local function createTab(name, index)
     return TabFrame
 end
 
-local TabFarm = createTab("🌾 Farming", 1)
-local TabProg = createTab("🔁 Progression", 2)
-local TabSet = createTab("⚙️ Settings", 3)
+local TabFarm = createTab("farm", 1)
+local TabProg = createTab("prog", 2)
+local TabSet = createTab("set", 3)
 
--- ================= INTERACTIVE COMPONENT CREATION =================
-local function createToggle(parent, labelText, callback)
+-- ================= INTERACTIVE COMPONENTS CREATION =================
+
+-- 1. Toggle Switch Component
+local function createToggle(parent, textKey, callback)
     local Container = Instance.new("Frame")
     Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
     Container.BorderSizePixel = 0
@@ -252,12 +282,14 @@ local function createToggle(parent, labelText, callback)
     Label.Size = UDim2.new(0.6, 0, 1, 0)
     Label.Position = UDim2.new(0, 12, 0, 0)
     Label.BackgroundTransparency = 1
-    Label.Text = labelText
+    Label.Text = lang.en[textKey]
     Label.TextColor3 = Color3.fromRGB(226, 226, 233)
-    Label.TextSize = 12
+    Label.TextSize = 11
     Label.Font = Enum.Font.SourceSansBold
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Container
+    
+    registeredElements[Label] = textKey
 
     local Switch = Instance.new("TextButton")
     Switch.Size = UDim2.new(0, 42, 0, 22)
@@ -297,18 +329,21 @@ local function createToggle(parent, labelText, callback)
     end)
 end
 
-local function createActionButton(parent, labelText, callback)
+-- 2. Action Button Component
+local function createActionButton(parent, textKey, callback)
     local Btn = Instance.new("TextButton")
     Btn.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-    Btn.Text = labelText
+    Btn.Text = lang.en[textKey]
     Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.TextSize = 12
+    Btn.TextSize = 11
     Btn.Font = Enum.Font.SourceSansBold
     Btn.Parent = parent
 
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 10)
     Corner.Parent = Btn
+    
+    registeredElements[Btn] = textKey
 
     Btn.MouseEnter:Connect(function()
         TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(252, 209, 22)}):Play()
@@ -322,26 +357,104 @@ local function createActionButton(parent, labelText, callback)
     end)
 end
 
--- Tab 1 Items
-createToggle(TabFarm, "🌾 Auto Farm", function(state) print("Auto Farm: ", state) end)
-createToggle(TabFarm, "⚔️ Kill Aura", function(state) print("Kill Aura: ", state) end)
+-- 3. TextBox Input Component (For Speed and Sound ID)
+local function createTextBox(parent, placeholderKey, callback)
+    local TextBox = Instance.new("TextBox")
+    TextBox.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+    TextBox.PlaceholderText = lang.en[placeholderKey]
+    TextBox.PlaceholderColor3 = Color3.fromRGB(138, 143, 157)
+    TextBox.Text = ""
+    TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextBox.TextSize = 11
+    TextBox.Font = Enum.Font.SourceSansBold
+    TextBox.Parent = parent
 
--- Tab 2 Items
-createToggle(TabProg, "🔁 Auto Rebirth", function(state) print("Auto Rebirth: ", state) end)
-createToggle(TabProg, "💪 Auto Train", function(state) print("Auto Train: ", state) end)
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = TextBox
+    
+    local Border = Instance.new("UIStroke")
+    Border.Thickness = 1
+    Border.Color = Color3.fromRGB(255, 255, 255)
+    Border.Transparency = 0.95
+    Border.Parent = TextBox
+    
+    registeredElements[TextBox] = placeholderKey
+    
+    TextBox.Focused:Connect(function()
+        TweenService:Create(Border, TweenInfo.new(0.2), {Color = Color3.fromRGB(252, 209, 22), Transparency = 0}):Play()
+    end)
+    TextBox.FocusLost:Connect(function()
+        TweenService:Create(Border, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 255, 255), Transparency = 0.95}):Play()
+        sounds.tab()
+        if callback then callback(TextBox.Text) end
+    end)
+end
 
--- Tab 3 Items
-createActionButton(TabSet, "🕊️ Fly GUI", function() print("Loaded Fly GUI.") end)
-createActionButton(TabSet, "📂 Load Dex", function() print("Dex Loaded.") end)
-createToggle(TabSet, "👻 Noclip", function(state) print("Noclip: ", state) end)
-createActionButton(TabSet, "🔵 Cobalt", function() print("Injected Cobalt.") end)
+-- ================= ASSIGNING ALL ORIGINAL FEATURES =================
+
+-- TAB 1: Farming
+createToggle(TabFarm, "auto", function(state) print("Auto Farm: ", state) end)
+createToggle(TabFarm, "aura", function(state) print("Kill Aura: ", state) end)
+
+-- TAB 2: Progression
+createToggle(TabProg, "rebirth", function(state) print("Auto Rebirth: ", state) end)
+createToggle(TabProg, "train", function(state) print("Auto Train: ", state) end)
+
+-- TAB 3: Settings (Complete List of JS Elements)
+createActionButton(TabSet, "fly", function() print("Fly Loaded.") end)
+createToggle(TabSet, "noclip", function(state) print("Noclip: ", state) end)
+createActionButton(TabSet, "dex", function() print("Dex Injected.") end)
+createActionButton(TabSet, "cobalt", function() print("Cobalt Injected.") end)
+
+-- Speed Input (Controls character Speed)
+createTextBox(TabSet, "speed", function(text)
+    local value = tonumber(text)
+    if value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+        print("WalkSpeed updated to: ", value)
+    end
+end)
+
+-- Sound ID Input (Plays Custom Roblox Sound)
+createTextBox(TabSet, "sound", function(text)
+    local id = tonumber(text)
+    if id then
+        playAudio(id, 1, 0.8)
+        print("Playing Custom Sound ID: ", id)
+    end
+end)
+
+-- Language Switcher
+createActionButton(TabSet, "trans", function()
+    isTagalog = not isTagalog
+    updateLanguage()
+end)
+
+-- Phonk Loop Switch (Synthesized Ambient Music Engine)
+local loopSound = nil
+createToggle(TabSet, "phonk", function(state)
+    if state then
+        loopSound = Instance.new("Sound")
+        loopSound.SoundId = "rbxassetid://9043825881" -- Cinematic Synth Hum Asset
+        loopSound.Volume = 0.4
+        loopSound.Looped = true
+        loopSound.Parent = workspace
+        loopSound:Play()
+    else
+        if loopSound then
+            loopSound:Stop()
+            loopSound:Destroy()
+            loopSound = nil
+        end
+    end
+end)
 
 -- ================= MINIMIZED FLOATING WIDGET (MINIBOX) =================
 local Minibox = Instance.new("TextButton")
 Minibox.Name = "Minibox"
 Minibox.Size = UDim2.new(0, 65, 0, 65)
--- I-pwesto ang minibox sa gilid para hindi nakaharang sa gitna
-Minibox.Position = UDim2.new(1, -100, 1, -100)
+Minibox.Position = UDim2.new(1, -100, 1, -100) -- Dito siya naka-default
 Minibox.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
 Minibox.Text = "PH"
 Minibox.TextColor3 = Color3.fromRGB(252, 209, 22)
@@ -359,7 +472,7 @@ MiniStroke.Thickness = 2.5
 MiniStroke.Color = Color3.fromRGB(252, 209, 22)
 MiniStroke.Parent = Minibox
 
--- Aura dynamic animation para sa Minibox
+-- Aura animation sa Minibox
 task.spawn(function()
     local colors = {Color3.fromRGB(252, 209, 22), Color3.fromRGB(255, 0, 85), Color3.fromRGB(0, 150, 255)}
     local counter = 1
@@ -373,10 +486,9 @@ end)
 
 makeDraggable(Minibox, Minibox)
 
--- Coordinates Mechanics (Minimize and Restore Logic)
+-- Coordinates Mechanics (Minimize and Center-Restore Logic)
 MinBtn.MouseButton1Click:Connect(function()
     sounds.tab()
-    -- Smooth fade out scaling bago i-hide
     local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1
@@ -392,13 +504,12 @@ Minibox.MouseButton1Click:Connect(function()
     sounds.tab()
     Minibox.Visible = false
     
-    -- LAGING GITNA ang coordinate lock kapag nag-restore mula sa minibox
+    -- EXPLICIT COORDINATE LOCK: Laging babalik sa gitna ng screen ang menu kapag binuksan!
     MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.BackgroundTransparency = 1
     MainFrame.Visible = true
     
-    -- Smooth bounce expand transitions
     TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 520, 0, 320),
         BackgroundTransparency = 0.04
@@ -407,10 +518,11 @@ end)
 
 CloseBtn.MouseButton1Click:Connect(function()
     sounds.tab()
+    if loopSound then loopSound:Destroy() end
     ScreenGui:Destroy()
 end)
 
--- ================= MASSIVE LOADING SCREEN =================
+-- ================= HIGH ACCURACY LOADING SCREEN =================
 local LoadingFrame = Instance.new("Frame")
 LoadingFrame.Name = "LoadingScreen"
 LoadingFrame.Size = UDim2.new(0, 520, 0, 320)
@@ -448,7 +560,7 @@ LoadSub.TextSize = 11
 LoadSub.Font = Enum.Font.SourceSansBold
 LoadSub.Parent = LoadingFrame
 
--- Progress track
+-- Progress Bar
 local ProgressTrack = Instance.new("Frame")
 ProgressTrack.Size = UDim2.new(0, 320, 0, 8)
 ProgressTrack.Position = UDim2.new(0.5, -160, 0.6, 0)
@@ -480,7 +592,6 @@ StatusText.TextSize = 11
 StatusText.Font = Enum.Font.Code
 StatusText.Parent = LoadingFrame
 
--- Loading simulation runtime logic
 local logs = {
     "Resolving Roblox memory layers...",
     "Bypassing anticheat network packets...",
@@ -494,18 +605,16 @@ task.spawn(function()
     
     for i = 1, #logs do
         StatusText.Text = logs[i]
-        
         local tween = TweenService:Create(ProgressBar, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(i / #logs, 0, 1, 0)
         })
         tween:Play()
         tween.Completed:Wait()
-        task.wait(0.2)
+        task.wait(0.25)
     end
     
     sounds.success()
     
-    -- Smoothly fade out loading panel
     local tweenOut = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1
@@ -514,7 +623,7 @@ task.spawn(function()
     tweenOut.Completed:Connect(function()
         LoadingFrame:Destroy()
         
-        -- Magpakita ang Main Menu gamit ang Bounce entry
+        -- Bounce Entry effect sa main panel
         MainFrame.Size = UDim2.new(0, 0, 0, 0)
         MainFrame.BackgroundTransparency = 1
         MainFrame.Visible = true
@@ -526,4 +635,4 @@ task.spawn(function()
     end)
 end)
 
-print("🔥 PHHUB v3.0: Luau High-Performance Aura UI Engine Active!")
+print("🔥 PHHUB v3.0: High-Performance Pixel-Perfect Luau Engine Active!")
