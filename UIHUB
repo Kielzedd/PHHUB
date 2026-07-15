@@ -8,9 +8,15 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ================= VERSION CONTROL SYSTEM =================
+local CURRENT_VERSION = "3.0.4"
+-- PALITAN MO ITO ng direct raw link ng version.txt mo sa GitHub
+local VERSION_URL = "https://raw.githubusercontent.com/Kielzedd/PHHUB/main/version.txt" 
 
 -- Safe GUI routing
 local ParentGui = nil
@@ -51,7 +57,8 @@ local sounds = {
     end,
     tab = function() playAudio(12221967, 1.4, 0.3) end,
     toggleOn = function() playAudio(12221967, 2.0, 0.4) end,
-    toggleOff = function() playAudio(12221967, 0.8, 0.4) end
+    toggleOff = function() playAudio(12221967, 0.8, 0.4) end,
+    alert = function() playAudio(6118151110, 1.0, 0.8) end -- Tunog para sa update
 }
 
 -- ================= TRANSLATION ENGINE =================
@@ -132,7 +139,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 18)
 MainCorner.Parent = MainFrame
 
--- Premium Aura Breathing Effect
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Thickness = 2.5
 MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -203,7 +209,6 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
--- **FIX: Added UIListLayout and UIPadding to Sidebar to eliminate tab overlapping!**
 local SidebarLayout = Instance.new("UIListLayout")
 SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
 SidebarLayout.Padding = UDim.new(0, 6)
@@ -238,7 +243,6 @@ local function createTab(nameKey, index)
     TabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabFrame.Parent = ContentArea
     
-    -- Absolute Grid Protection System (Mathematical fit to avoid wrapping bugs)
     local UIGrid = Instance.new("UIGridLayout")
     UIGrid.CellSize = UDim2.new(0.5, -14, 0, 48) 
     UIGrid.CellPadding = UDim2.new(0, 8, 0, 8)
@@ -299,8 +303,6 @@ local TabProg = createTab("prog", 2)
 local TabSet = createTab("set", 3)
 
 -- ================= WRAPPER CONTAINER ENGINE =================
-
--- 1. Styled Toggle Card
 local function createToggle(parent, textKey, callback)
     local Container = Instance.new("Frame")
     Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
@@ -362,7 +364,6 @@ local function createToggle(parent, textKey, callback)
     end)
 end
 
--- 2. Styled Action Button Card (Wrapped to preserve grid dimensions)
 local function createActionButton(parent, textKey, callback)
     local Container = Instance.new("Frame")
     Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
@@ -396,7 +397,6 @@ local function createActionButton(parent, textKey, callback)
     end)
 end
 
--- 3. Styled Input Box Card (Wrapped to preserve grid dimensions)
 local function createTextBox(parent, placeholderKey, callback)
     local Container = Instance.new("Frame")
     Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
@@ -447,13 +447,35 @@ createToggle(TabFarm, "aura", function(state) print("Kill Aura: ", state) end)
 createToggle(TabProg, "rebirth", function(state) print("Auto Rebirth: ", state) end)
 createToggle(TabProg, "train", function(state) print("Auto Train: ", state) end)
 
--- TAB 3: Settings Tab (100% JS Mirror)
-createActionButton(TabSet, "fly", function() print("Fly Engine Loaded.") end)
-createToggle(TabSet, "noclip", function(state) print("Noclip Active: ", state) end)
-createActionButton(TabSet, "dex", function() print("Dex Loaded.") end)
-createActionButton(TabSet, "cobalt", function() print("Cobalt Loaded.") end)
+-- TAB 3: Settings Tab (LOADSTRINGS ATTACHED)
+createActionButton(TabSet, "fly", function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))() end)
+end)
 
--- WalkSpeed with Character respawn persistence support
+createToggle(TabSet, "noclip", function(state) 
+    if state then
+        _G.Noclip = game:GetService("RunService").Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if _G.Noclip then _G.Noclip:Disconnect() _G.Noclip = nil end
+    end
+end)
+
+createActionButton(TabSet, "dex", function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))() end)
+end)
+
+createActionButton(TabSet, "cobalt", function()
+    task.spawn(function()
+        pcall(function() loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))() end)
+    end)
+end)
+
 createTextBox(TabSet, "speed", function(text)
     local value = tonumber(text)
     if value then
@@ -525,7 +547,6 @@ end)
 
 makeDraggable(Minibox, Minibox)
 
--- Minimize/Restore Transition Coords Logic
 MinBtn.MouseButton1Click:Connect(function()
     sounds.tab()
     local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
@@ -542,8 +563,6 @@ end)
 Minibox.MouseButton1Click:Connect(function()
     sounds.tab()
     Minibox.Visible = false
-    
-    -- Coordinate Lock: Main Menu always pops up exactly at screen center
     MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.BackgroundTransparency = 1
@@ -558,6 +577,7 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     sounds.tab()
     if loopSound then loopSound:Destroy() end
+    if _G.Noclip then _G.Noclip:Disconnect() end
     ScreenGui:Destroy()
 end)
 
@@ -674,97 +694,84 @@ local function startLoader()
     end)
 end
 
--- ================= REQUIRED ENGLISH SYSTEM UPDATE NOTICE SCREEN =================
-local NoticeFrame = Instance.new("Frame")
-NoticeFrame.Name = "NoticeScreen"
-NoticeFrame.Size = UDim2.new(0, 420, 0, 260)
-NoticeFrame.Position = UDim2.new(0.5, -210, 0.5, -130)
-NoticeFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
-NoticeFrame.BorderSizePixel = 0
-NoticeFrame.Parent = ScreenGui
+-- ================= LIVE GITHUB UPDATE CHECKER =================
+local function triggerUpdateNotice(newVersion)
+    sounds.alert()
+    local UpdateFrame = Instance.new("Frame")
+    UpdateFrame.Name = "UpdateScreen"
+    UpdateFrame.Size = UDim2.new(0, 420, 0, 200)
+    UpdateFrame.Position = UDim2.new(0.5, -210, 0.5, -100)
+    UpdateFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
+    UpdateFrame.BorderSizePixel = 0
+    UpdateFrame.ZIndex = 100
+    UpdateFrame.Parent = ScreenGui
 
-local NoticeCorner = Instance.new("UICorner")
-NoticeCorner.CornerRadius = UDim.new(0, 18)
-NoticeCorner.Parent = NoticeFrame
+    local UpdateCorner = Instance.new("UICorner")
+    UpdateCorner.CornerRadius = UDim.new(0, 18)
+    UpdateCorner.Parent = UpdateFrame
 
-local NoticeStroke = Instance.new("UIStroke")
-NoticeStroke.Thickness = 2
-NoticeStroke.Color = Color3.fromRGB(255, 50, 50) -- Glowing Warning Crimson
-NoticeStroke.Parent = NoticeFrame
-
--- Glowing Warning Animation for Notice
-task.spawn(function()
-    while NoticeFrame.Parent do
-        local t1 = TweenService:Create(NoticeStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 150, 0)})
-        t1:Play()
-        t1.Completed:Wait()
-        local t2 = TweenService:Create(NoticeStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 50, 50)})
-        t2:Play()
-        t2.Completed:Wait()
-    end
-end)
-
-local NoticeHeader = Instance.new("TextLabel")
-NoticeHeader.Size = UDim2.new(1, 0, 0, 40)
-NoticeHeader.Position = UDim2.new(0, 0, 0, 15)
-NoticeHeader.BackgroundTransparency = 1
-NoticeHeader.Text = "SYSTEM UPDATE & PATCH NOTICE"
-NoticeHeader.TextColor3 = Color3.fromRGB(255, 50, 50)
-NoticeHeader.TextSize = 18
-NoticeHeader.Font = Enum.Font.GothamBold
-NoticeHeader.Parent = NoticeFrame
-
-local NoticeText = Instance.new("TextLabel")
-NoticeText.Size = UDim2.new(1, -40, 0, 110)
-NoticeText.Position = UDim2.new(0, 20, 0, 55)
-NoticeText.BackgroundTransparency = 1
-NoticeText.Text = "We have successfully rolled out Patch v3.0.4. This update resolves critical layout conflicts, prevents sidebar tab overlapping, and optimizes dynamic grid systems for a seamless execution on mobile and desktop.\n\nAll Java-ported settings (WalkSpeed, Sound Injection, and Language Switchers) are now fully operational."
-NoticeText.TextColor3 = Color3.fromRGB(180, 185, 200)
-NoticeText.TextSize = 11
-NoticeText.Font = Enum.Font.GothamMedium
-NoticeText.TextWrapped = true
-NoticeText.Parent = NoticeFrame
-
-local ProceedBtn = Instance.new("TextButton")
-ProceedBtn.Size = UDim2.new(1, -40, 0, 42)
-ProceedBtn.Position = UDim2.new(0, 20, 1, -62)
-ProceedBtn.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-ProceedBtn.Text = "PROCEED TO INJECTOR"
-ProceedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ProceedBtn.TextSize = 11
-ProceedBtn.Font = Enum.Font.GothamBold
-ProceedBtn.Parent = NoticeFrame
-
-local ProceedCorner = Instance.new("UICorner")
-ProceedCorner.CornerRadius = UDim.new(0, 10)
-ProceedCorner.Parent = ProceedBtn
-
-local ProceedStroke = Instance.new("UIStroke")
-ProceedStroke.Thickness = 1.5
-ProceedStroke.Color = Color3.fromRGB(255, 50, 50)
-ProceedStroke.Parent = ProceedBtn
-
-ProceedBtn.MouseEnter:Connect(function()
-    TweenService:Create(ProceedStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(0, 230, 118)}):Play()
-    TweenService:Create(ProceedBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(0, 230, 118)}):Play()
-end)
-
-ProceedBtn.MouseLeave:Connect(function()
-    TweenService:Create(ProceedStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 50, 50)}):Play()
-    TweenService:Create(ProceedBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-end)
-
-ProceedBtn.MouseButton1Click:Connect(function()
-    sounds.success()
-    local tOut = TweenService:Create(NoticeFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1
-    })
-    tOut:Play()
-    tOut.Completed:Connect(function()
-        NoticeFrame:Destroy()
-        startLoader() 
+    local UpdateStroke = Instance.new("UIStroke")
+    UpdateStroke.Thickness = 2
+    UpdateStroke.Color = Color3.fromRGB(255, 50, 50)
+    UpdateStroke.Parent = UpdateFrame
+    
+    task.spawn(function()
+        while UpdateFrame.Parent do
+            TweenService:Create(UpdateStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 150, 0)}):Play()
+            task.wait(1)
+            TweenService:Create(UpdateStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(255, 50, 50)}):Play()
+            task.wait(1)
+        end
     end)
-end)
 
-print("🔥 PHHUB v3.0: Github-Ready High-Performance Luau Engine Initialized!")
+    local HeaderTxt = Instance.new("TextLabel")
+    HeaderTxt.Size = UDim2.new(1, 0, 0, 40)
+    HeaderTxt.Position = UDim2.new(0, 0, 0, 15)
+    HeaderTxt.BackgroundTransparency = 1
+    HeaderTxt.Text = "🚨 SCRIPT UPDATE DETECTED 🚨"
+    HeaderTxt.TextColor3 = Color3.fromRGB(255, 50, 50)
+    HeaderTxt.TextSize = 18
+    HeaderTxt.Font = Enum.Font.GothamBold
+    HeaderTxt.ZIndex = 101
+    HeaderTxt.Parent = UpdateFrame
+
+    local InfoTxt = Instance.new("TextLabel")
+    InfoTxt.Size = UDim2.new(1, -40, 0, 80)
+    InfoTxt.Position = UDim2.new(0, 20, 0, 55)
+    InfoTxt.BackgroundTransparency = 1
+    InfoTxt.Text = "A new version of PHHUB is available (v" .. newVersion .. ").\nPlease re-execute the script from your executor to apply the latest changes and bypasses."
+    InfoTxt.TextColor3 = Color3.fromRGB(180, 185, 200)
+    InfoTxt.TextSize = 13
+    InfoTxt.Font = Enum.Font.GothamMedium
+    InfoTxt.TextWrapped = true
+    InfoTxt.ZIndex = 101
+    InfoTxt.Parent = UpdateFrame
+
+    local CloseUpdBtn = Instance.new("TextButton")
+    CloseUpdBtn.Size = UDim2.new(1, -40, 0, 35)
+    CloseUpdBtn.Position = UDim2.new(0, 20, 1, -50)
+    CloseUpdBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    CloseUpdBtn.Text = "UNDERSTOOD"
+    CloseUpdBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseUpdBtn.TextSize = 12
+    CloseUpdBtn.Font = Enum.Font.GothamBold
+    CloseUpdBtn.ZIndex = 101
+    CloseUpdBtn.Parent = UpdateFrame
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 8)
+    BtnCorner.Parent = CloseUpdBtn
+
+    CloseUpdBtn.MouseButton1Click:Connect(function()
+        UpdateFrame:Destroy()
+    end)
+end
+
+-- Update Loop Logic
+task.spawn(function()
+    while true do
+        task.wait(60) -- Checheck niya kung may update sa github tuwing 60 seconds
+        pcall(function()
+            local liveVersion = game:HttpGet(VERSION_URL)
+            if liveVersion then
+                -- Tinatanggal yung mga extra spaces o next line characters
