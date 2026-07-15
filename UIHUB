@@ -774,4 +774,16 @@ task.spawn(function()
         pcall(function()
             local liveVersion = game:HttpGet(VERSION_URL)
             if liveVersion then
+liveVersion = string.gsub(liveVersion, "^%s*(.-)%s*$", "%1") 
+                    if liveVersion ~= "" and liveVersion ~= CURRENT_VERSION then
+                        triggerUpdateNotice(liveVersion)
+                        break -- Papatayin na ang loop para hindi mag-spam yung notice
+                    end
+                end
+            end)
+        end
+    end)
+
+-- Start immediately since notice is removed
+startLoader()
                 -- Tinatanggal yung mga extra spaces o next line characters
