@@ -2,7 +2,7 @@
     PHHUB v3.0 - Aura Cyberpunk Edition
     Optimized & Ported from High-Performance JS Framework
     Author: Gemini AI Collaborator
-    Repository: GitHub Hosted
+    Repository: GitHub Hosted (Loadstring Ready)
 --]]
 
 local Players = game:GetService("Players")
@@ -203,6 +203,19 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
+-- **FIX: Added UIListLayout and UIPadding to Sidebar to eliminate tab overlapping!**
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Padding = UDim.new(0, 6)
+SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarLayout.Parent = Sidebar
+
+local SidebarPadding = Instance.new("UIPadding")
+SidebarPadding.PaddingTop = UDim.new(0, 12)
+SidebarPadding.PaddingLeft = UDim.new(0, 8)
+SidebarPadding.PaddingRight = UDim.new(0, 8)
+SidebarPadding.Parent = Sidebar
+
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -140, 1, -48)
 ContentArea.Position = UDim2.new(0, 140, 0, 48)
@@ -225,28 +238,34 @@ local function createTab(nameKey, index)
     TabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabFrame.Parent = ContentArea
     
-    -- Absolute Grid Protection System (Preventing overlaps)
+    -- Absolute Grid Protection System (Mathematical fit to avoid wrapping bugs)
     local UIGrid = Instance.new("UIGridLayout")
-    UIGrid.CellSize = UDim2.new(0.5, -15, 0, 48) -- Perfectly calculated width for 2 columns
-    UIGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+    UIGrid.CellSize = UDim2.new(0.5, -14, 0, 48) 
+    UIGrid.CellPadding = UDim2.new(0, 8, 0, 8)
     UIGrid.SortOrder = Enum.SortOrder.LayoutOrder
     UIGrid.Parent = TabFrame
     
     local UIPadding = Instance.new("UIPadding")
-    UIPadding.PaddingLeft = UDim.new(0, 15)
-    UIPadding.PaddingRight = UDim.new(0, 15)
-    UIPadding.PaddingTop = UDim.new(0, 15)
-    UIPadding.PaddingBottom = UDim.new(0, 15)
+    UIPadding.PaddingLeft = UDim.new(0, 10)
+    UIPadding.PaddingRight = UDim.new(0, 10)
+    UIPadding.PaddingTop = UDim.new(0, 10)
+    UIPadding.PaddingBottom = UDim.new(0, 10)
     UIPadding.Parent = TabFrame
 
     local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(1, 0, 0, 40)
-    TabBtn.BackgroundTransparency = 1
+    TabBtn.Size = UDim2.new(1, 0, 0, 36)
+    TabBtn.BackgroundColor3 = (index == 1) and Color3.fromRGB(20, 22, 27) or Color3.fromRGB(12, 13, 16)
+    TabBtn.BackgroundTransparency = (index == 1) and 0 or 1
     TabBtn.Text = lang.en[nameKey]
     TabBtn.TextColor3 = (index == 1) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
-    TabBtn.TextSize = 13
+    TabBtn.TextSize = 12
     TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.LayoutOrder = index
     TabBtn.Parent = Sidebar
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 8)
+    BtnCorner.Parent = TabBtn
     
     registeredElements[TabBtn] = nameKey
     
@@ -254,7 +273,19 @@ local function createTab(nameKey, index)
         sounds.tab()
         for i, tFrame in ipairs(Tabs) do
             tFrame.Visible = (i == index)
-            TabButtons[i].TextColor3 = (i == index) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
+            local btn = TabButtons[i]
+            if i == index then
+                TweenService:Create(btn, TweenInfo.new(0.25), {
+                    TextColor3 = Color3.fromRGB(252, 209, 22),
+                    BackgroundTransparency = 0,
+                    BackgroundColor3 = Color3.fromRGB(20, 22, 27)
+                }):Play()
+            else
+                TweenService:Create(btn, TweenInfo.new(0.25), {
+                    TextColor3 = Color3.fromRGB(138, 143, 157),
+                    BackgroundTransparency = 1
+                }):Play()
+            end
         end
     end)
     
@@ -422,10 +453,16 @@ createToggle(TabSet, "noclip", function(state) print("Noclip Active: ", state) e
 createActionButton(TabSet, "dex", function() print("Dex Loaded.") end)
 createActionButton(TabSet, "cobalt", function() print("Cobalt Loaded.") end)
 
+-- WalkSpeed with Character respawn persistence support
 createTextBox(TabSet, "speed", function(text)
     local value = tonumber(text)
-    if value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+    if value then
+        local function setSpeed(char)
+            local hum = char:WaitForChild("Humanoid", 5)
+            if hum then hum.WalkSpeed = value end
+        end
+        if LocalPlayer.Character then setSpeed(LocalPlayer.Character) end
+        LocalPlayer.CharacterAdded:Connect(setSpeed)
     end
 end)
 
@@ -444,7 +481,7 @@ createToggle(TabSet, "phonk", function(state)
     if state then
         loopSound = Instance.new("Sound")
         loopSound.SoundId = "rbxassetid://9043825881"
-        loopSound.Volume = 0.4
+        loopSound.Volume = 0.45
         loopSound.Looped = true
         loopSound.Parent = workspace
         loopSound:Play()
@@ -498,7 +535,7 @@ MinBtn.MouseButton1Click:Connect(function()
     tween:Play()
     tween.Completed:Connect(function()
         MainFrame.Visible = false
-        Minibox.Visible = true -- Minibox stays locked exactly where you dragged it!
+        Minibox.Visible = true 
     end)
 end)
 
@@ -637,7 +674,7 @@ local function startLoader()
     end)
 end
 
--- ================= REQUIRED SYSTEM UPDATE NOTICE SCREEN =================
+-- ================= REQUIRED ENGLISH SYSTEM UPDATE NOTICE SCREEN =================
 local NoticeFrame = Instance.new("Frame")
 NoticeFrame.Name = "NoticeScreen"
 NoticeFrame.Size = UDim2.new(0, 420, 0, 260)
@@ -671,7 +708,7 @@ local NoticeHeader = Instance.new("TextLabel")
 NoticeHeader.Size = UDim2.new(1, 0, 0, 40)
 NoticeHeader.Position = UDim2.new(0, 0, 0, 15)
 NoticeHeader.BackgroundTransparency = 1
-NoticeHeader.Text = "SYSTEM UPDATE NOTICE"
+NoticeHeader.Text = "SYSTEM UPDATE & PATCH NOTICE"
 NoticeHeader.TextColor3 = Color3.fromRGB(255, 50, 50)
 NoticeHeader.TextSize = 18
 NoticeHeader.Font = Enum.Font.GothamBold
@@ -681,7 +718,7 @@ local NoticeText = Instance.new("TextLabel")
 NoticeText.Size = UDim2.new(1, -40, 0, 110)
 NoticeText.Position = UDim2.new(0, 20, 0, 55)
 NoticeText.BackgroundTransparency = 1
-NoticeText.Text = "We are currently running hotfixes and structural alignments to match our high-performance desktop framework. Alignment transitions, grid structures, and core features are being live-calibrated for maximum stability.\n\nClick below to proceed with the core executor runtime."
+NoticeText.Text = "We have successfully rolled out Patch v3.0.4. This update resolves critical layout conflicts, prevents sidebar tab overlapping, and optimizes dynamic grid systems for a seamless execution on mobile and desktop.\n\nAll Java-ported settings (WalkSpeed, Sound Injection, and Language Switchers) are now fully operational."
 NoticeText.TextColor3 = Color3.fromRGB(180, 185, 200)
 NoticeText.TextSize = 11
 NoticeText.Font = Enum.Font.GothamMedium
@@ -726,7 +763,7 @@ ProceedBtn.MouseButton1Click:Connect(function()
     tOut:Play()
     tOut.Completed:Connect(function()
         NoticeFrame:Destroy()
-        startLoader() -- Start loading system
+        startLoader() 
     end)
 end)
 
