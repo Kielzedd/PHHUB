@@ -1,413 +1,529 @@
--- PHHUB v3.0 Ultimate Edition (Roblox Executor Version)
--- Supports: Krnl, Synapse, Fluxus, Delta, etc.
-
+-- PHHUB v3.0 Ultimate Roblox UI (Aura Cyberpunk Edition)
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Iwasan ang duplicate kung i-eexecute ulit
-local existing = CoreGui:FindFirstChild("PHHUB_v3")
-if existing then existing:Destroy() end
-
--- Helper Function para mas mabilis gumawa ng UI
-local function create(className, properties)
-    local inst = Instance.new(className)
-    for k, v in pairs(properties or {}) do
-        inst[k] = v
-    end
-    return inst
+-- Humanap ng ligtas na paglalagyan ng UI (CoreGui para sa exploit, PlayerGui para sa Studio)
+local ParentGui = nil
+pcall(function()
+    ParentGui = game:GetService("CoreGui")
+end)
+if not ParentGui then
+    ParentGui = PlayerGui
 end
 
--- ================= AUDIO / PHONK SETUP =================
--- Nilipat sa SoundService para maiwasan ang audio block ng ibang executors
-local phonkSound = create("Sound", {
-    SoundId = "rbxassetid://9047102604", 
-    Volume = 0.5,
-    Looped = true,
-    Parent = SoundService
-})
-local clickSound = create("Sound", {
-    SoundId = "rbxassetid://12222200", -- Gumagamit ng default roblox button sound na laging gumagana
-    Volume = 1,
-    Parent = SoundService
-})
+-- Tanggalin ang lumang UI para walang overlap
+if ParentGui:FindFirstChild("PHHUB_v3_Roblox") then
+    ParentGui["PHHUB_v3_Roblox"]:Destroy()
+end
 
--- ================= LANGUAGE DICTIONARY =================
-local isTagalog = false
-local lang = {
-    en = {
-        farm = "🌾 Farming", prog = "🔁 Progression", set = "⚙️ Settings",
-        auto = "🌾 Activate Auto Farm", aura = "⚔️ Kill Aura",
-        rebirth = "🔁 Fast Auto Rebirth", train = "💪 Auto-Train Stats",
-        fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip",
-        dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt",
-        trans = "🇺🇸 Tagalog", phonk = "🎵 Play Phonk"
-    },
-    tl = {
-        farm = "🌾 Pag-Farm", prog = "🔁 Pag-Unlad", set = "⚙️ Mga Setting",
-        auto = "🌾 Kusang Farm", aura = "⚔️ Patay Aura",
-        rebirth = "🔁 Mabilis na Rebirth", train = "💪 Sanayin ang Stats",
-        fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)",
-        dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt",
-        trans = "🇵🇭 English", phonk = "🎵 Patugtugin Phonk"
-    }
+-- Base GUI Container
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PHHUB_v3_Roblox"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = ParentGui
+
+-- ================= SOUND CONTROLLERS =================
+local function playAudio(assetId, pitch, volume)
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://" .. tostring(assetId)
+    sound.Pitch = pitch or 1
+    sound.Volume = volume or 0.5
+    sound.PlayOnRemove = true
+    sound.Parent = workspace
+    sound:Destroy()
+end
+
+local sounds = {
+    loading = function() playAudio(12222124, 1.2, 0.4) end,
+    success = function() 
+        task.spawn(function()
+            playAudio(12221967, 1.2, 0.4)
+            task.wait(0.1)
+            playAudio(12221967, 1.5, 0.4)
+            task.wait(0.1)
+            playAudio(12221967, 1.8, 0.5)
+        end)
+    end,
+    tab = function() playAudio(12221967, 1.4, 0.3) end,
+    toggleOn = function() playAudio(12221967, 2.0, 0.4) end,
+    toggleOff = function() playAudio(12221967, 0.8, 0.4) end
 }
 
--- ================= MAIN UI CREATION =================
-local ScreenGui = create("ScreenGui", { Name = "PHHUB_v3", Parent = (gethui and gethui()) or CoreGui })
+-- ================= DRAG ENGINE FUNCTION =================
+local function makeDraggable(frame, handle)
+    local dragging = false
+    local dragInput, dragStart, startPos
 
--- Ang Base Menu
-local BaseMenu = create("Frame", {
-    Name = "BaseMenu",
-    Size = UDim2.new(0, 500, 0, 300),
-    Position = UDim2.new(0.5, -250, 0.5, -150),
-    BackgroundColor3 = Color3.fromRGB(17, 18, 22),
-    BackgroundTransparency = 0.15,
-    BorderSizePixel = 0,
-    ClipsDescendants = true,
-    Parent = ScreenGui
-})
-local BaseCorner = create("UICorner", { CornerRadius = UDim.new(0, 14), Parent = BaseMenu })
-local BaseStroke = create("UIStroke", { Color = Color3.fromRGB(62, 68, 81), Thickness = 1, Parent = BaseMenu })
-
--- Floating Box Logo
-local MiniBox = create("TextButton", {
-    Size = UDim2.new(0, 60, 0, 60),
-    Position = UDim2.new(0.5, -30, 0.5, -30),
-    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-    Text = "PH",
-    TextColor3 = Color3.fromRGB(252, 209, 22),
-    TextSize = 24,
-    Font = Enum.Font.GothamBlack,
-    Visible = false,
-    Parent = ScreenGui
-})
-create("UICorner", { CornerRadius = UDim.new(0, 16), Parent = MiniBox })
-create("UIStroke", { Color = Color3.fromRGB(252, 209, 22), Thickness = 2, Parent = MiniBox })
-create("UIGradient", {
-    Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 56, 168)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(206, 17, 38)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(206, 17, 38))
-    },
-    Rotation = 45,
-    Parent = MiniBox
-})
-
--- Header
-local Header = create("Frame", {
-    Size = UDim2.new(1, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(20, 21, 28),
-    BackgroundTransparency = 0.3,
-    BorderSizePixel = 0,
-    Parent = BaseMenu
-})
-local HeaderTitle = create("TextLabel", {
-    Size = UDim2.new(0, 200, 1, 0), Position = UDim2.new(0, 15, 0, 0),
-    BackgroundTransparency = 1,
-    Text = "PHHUB v3.0",
-    TextColor3 = Color3.fromRGB(252, 209, 22),
-    TextSize = 16, Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    Parent = Header
-})
-local MinBtn = create("TextButton", {
-    Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -70, 0, 5),
-    BackgroundTransparency = 1, Text = "—", TextColor3 = Color3.fromRGB(160, 165, 181), TextSize = 18, Font = Enum.Font.GothamBold, Parent = Header
-})
-local CloseBtn = create("TextButton", {
-    Size = UDim2.new(0, 30, 0, 30), Position = UDim2.new(1, -35, 0, 5),
-    BackgroundTransparency = 1, Text = "X", TextColor3 = Color3.fromRGB(243, 139, 168), TextSize = 14, Font = Enum.Font.GothamBold, Parent = Header
-})
-
--- Sidebar
-local Sidebar = create("Frame", {
-    Size = UDim2.new(0, 130, 1, -40), Position = UDim2.new(0, 0, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(15, 16, 20), BackgroundTransparency = 0.5, BorderSizePixel = 0, Parent = BaseMenu
-})
-local TabLayout = create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = Sidebar })
-create("UIPadding", { PaddingTop = UDim.new(0, 10), Parent = Sidebar })
-
--- Main Content Area
-local Content = create("Frame", {
-    Size = UDim2.new(1, -130, 1, -40), Position = UDim2.new(0, 130, 0, 40),
-    BackgroundTransparency = 1, Parent = BaseMenu
-})
-
--- ================= TAB LOGIC & BUTTON CREATOR =================
-local tabs = {}
-local tabButtons = {}
-local phonkPlaying = false
-
-local function createCheatButton(parent, text, callback)
-    local btn = create("TextButton", {
-        Size = UDim2.new(0.48, 0, 0, 40),
-        BackgroundColor3 = Color3.fromRGB(40, 43, 54),
-        Text = text, TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 12, Font = Enum.Font.GothamBold,
-        AutoButtonColor = false, Parent = parent
-    })
-    create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn })
-    create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9, Parent = btn })
-    
-    local active = false
-    btn.MouseButton1Click:Connect(function()
-        clickSound:Play()
-        active = not active
-        TweenService:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = active and Color3.fromRGB(49, 176, 87) or Color3.fromRGB(40, 43, 54)
-        }):Play()
-        if callback then callback(active) end
-    end)
-    return btn
-end
-
--- Custom Input Creator
-local function createCheatTextBox(parent, placeholder, callback)
-    local container = create("Frame", {
-        Size = UDim2.new(0.48, 0, 0, 40),
-        BackgroundColor3 = Color3.fromRGB(40, 43, 54),
-        Parent = parent
-    })
-    create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = container })
-    create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.9, Parent = container })
-    
-    local textBox = create("TextBox", {
-        Size = UDim2.new(1, -10, 1, 0),
-        Position = UDim2.new(0, 5, 0, 0),
-        BackgroundTransparency = 1,
-        PlaceholderText = placeholder,
-        PlaceholderColor3 = Color3.fromRGB(160, 165, 181),
-        Text = "",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        ClearTextOnFocus = true,
-        Parent = container
-    })
-    
-    textBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            clickSound:Play()
-            if callback then callback(textBox.Text) end
-        end
-    end)
-    return container
-end
-
--- Create Tabs
-local FarmTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = true, Parent = Content })
-local ProgTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = Content })
-local SetTab = create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = Content })
-
-create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = FarmTab })
-create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = FarmTab })
-create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = ProgTab })
-create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = ProgTab })
-create("UIPadding", { PaddingTop = UDim.new(0, 15), PaddingLeft = UDim.new(0, 15), Parent = SetTab })
-create("UIGridLayout", { CellSize = UDim2.new(0, 160, 0, 40), CellPadding = UDim2.new(0, 10, 0, 10), Parent = SetTab })
-
-tabs.farm = FarmTab; tabs.prog = ProgTab; tabs.set = SetTab
-
--- ================= CHEAT SCRIPTS =================
-
-local btnAuto = createCheatButton(FarmTab, lang.en.auto, function(state) print("Auto Farm: " .. tostring(state)) end)
-local btnAura = createCheatButton(FarmTab, lang.en.aura, function(state) print("Kill Aura: " .. tostring(state)) end)
-local btnRebirth = createCheatButton(ProgTab, lang.en.rebirth, function(state) print("Rebirth: " .. tostring(state)) end)
-local btnTrain = createCheatButton(ProgTab, lang.en.train, function(state) print("Train: " .. tostring(state)) end)
-
--- FLY SCRIPT (Ginamit ko yung sikat na Fly GUI V3 mula Github na gumagana sa Mobile at PC)
-local btnFly = createCheatButton(SetTab, lang.en.fly, function(state)
-    -- Kapag pinindot, magloload siya ng maliit na fly menu sa screen na easy gamitin
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
-    end)
-end)
-
--- NOCLIP SCRIPT
-local noclipConnection
-local btnNoclip = createCheatButton(SetTab, lang.en.noclip, function(state)
-    if state then
-        noclipConnection = RunService.Stepped:Connect(function()
-            local character = LocalPlayer.Character
-            if character then
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
-                        part.CanCollide = false
-                    end
-                end
-            end
-        end)
-    else
-        if noclipConnection then
-            noclipConnection:Disconnect()
-            noclipConnection = nil
-        end
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
-end)
 
-local btnDex = createCheatButton(SetTab, lang.en.dex, function(state)
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
-end)
-
--- COBALT LOADSTRING
-local btnCobalt = createCheatButton(SetTab, lang.en.cobalt, function(state)
-    task.spawn(function()
-        pcall(function()
-            loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))()
-        end)
-    end)
-end)
-
--- SPEED INPUT BOX
-createCheatTextBox(SetTab, "⚡ Speed (E.g. 50)", function(value)
-    local speed = tonumber(value)
-    if speed then
-        local character = LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then humanoid.WalkSpeed = speed end
-        end
-    end
-end)
-
--- SOUND ID INPUT BOX
-createCheatTextBox(SetTab, "🎵 Sound ID Input", function(value)
-    local cleanId = value:match("%d+")
-    if cleanId then
-        phonkSound.SoundId = "rbxassetid://" .. cleanId
-        if phonkPlaying then
-            phonkSound:Stop()
-            phonkSound:Play()
-        end
-    end
-end)
-
--- Translate Button
-local btnTrans = createCheatButton(SetTab, lang.en.trans, function()
-    isTagalog = not isTagalog
-    local l = isTagalog and lang.tl or lang.en
-    tabButtons.farm.Text = l.farm; tabButtons.prog.Text = l.prog; tabButtons.set.Text = l.set
-    btnAuto.Text = l.auto; btnAura.Text = l.aura
-    btnRebirth.Text = l.rebirth; btnTrain.Text = l.train
-    btnFly.Text = l.fly; btnNoclip.Text = l.noclip
-    btnDex.Text = l.dex; btnCobalt.Text = l.cobalt
-    btnTrans.Text = l.trans
-end)
-
--- Phonk Music Toggle
-local btnPhonk = createCheatButton(SetTab, lang.en.phonk, function(state)
-    phonkPlaying = state
-    if phonkPlaying then
-        phonkSound:Play()
-    else
-        phonkSound:Stop()
-    end
-end)
-
--- ================= TAB SWITCHER =================
-local function switchTab(tabId)
-    for k, v in pairs(tabs) do v.Visible = false end
-    tabs[tabId].Visible = true
-end
-
-local function createNavBtn(id, text)
-    local btn = create("TextButton", {
-        Size = UDim2.new(0.9, 0, 0, 30), BackgroundTransparency = 1,
-        Text = text, TextColor3 = Color3.fromRGB(205, 214, 244),
-        TextSize = 13, Font = Enum.Font.GothamBold, Parent = Sidebar
-    })
-    btn.MouseButton1Click:Connect(function() clickSound:Play() switchTab(id) end)
-    tabButtons[id] = btn
-end
-
-createNavBtn("farm", lang.en.farm)
-createNavBtn("prog", lang.en.prog)
-createNavBtn("set", lang.en.set)
-
--- ================= MORPHING, DRAG & MINIMIZE LOGIC =================
-local isMinimized = false
-local dragging = false
-local savedMenuPos = BaseMenu.Position
-local savedMiniPos = nil -- Dito ise-save ang huling posisyon ng MiniBox
-
-MinBtn.MouseButton1Click:Connect(function()
-    clickSound:Play()
-    isMinimized = true
-    savedMenuPos = BaseMenu.Position -- I-save ang current posisyon ng menu
-
-    TweenService:Create(BaseMenu, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-    task.wait(0.3)
-    BaseMenu.Visible = false
-    MiniBox.Visible = true
-    
-    -- Kapag may naka-save na pwesto ang MiniBox, dun siya pupunta. Kung wala, sa gitna siya lilitaw.
-    if savedMiniPos then
-        MiniBox.Position = savedMiniPos
-    else
-        MiniBox.Position = UDim2.new(0, BaseMenu.AbsolutePosition.X + 220, 0, BaseMenu.AbsolutePosition.Y + 120)
-    end
-end)
-
-MiniBox.MouseButton1Click:Connect(function()
-    if dragging then return end
-    clickSound:Play()
-    isMinimized = false
-    
-    savedMiniPos = MiniBox.Position -- I-save kung saan naiwan sa gilid ang MiniBox
-
-    MiniBox.Visible = false
-    BaseMenu.Visible = true
-    BaseMenu.Position = savedMenuPos -- Ibalik kung saan huling naiwan ang Main Menu
-    
-    TweenService:Create(BaseMenu, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 500, 0, 300)}):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    clickSound:Play()
-    phonkSound:Stop()
-    if noclipConnection then noclipConnection:Disconnect() end
-    ScreenGui:Destroy()
-end)
-
--- UNIVERSAL INSTANT DRAGGING FUNCTION (Para mas mabilis sumunod)
-local function enableInstantDrag(frame)
-    local dragToggle = false
-    local dragStart = nil
-    local startPos = nil
-
-    frame.InputBegan:Connect(function(input)
+    handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragToggle = true
+            dragging = true
             dragStart = input.Position
             startPos = frame.Position
-
+            
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    dragToggle = false
-                    task.wait(0.1)
                     dragging = false
                 end
             end)
         end
     end)
 
-    frame.InputChanged:Connect(function(input)
+    handle.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if dragToggle then
-                dragging = true
-                local delta = input.Position - dragStart
-                -- Instant na lilipat ang UI, walang delay ng TweenService
-                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
         end
     end)
 end
 
-enableInstantDrag(Header) -- Main Menu Header drag
-enableInstantDrag(MiniBox) -- MiniBox drag
+-- ================= CREATING THE MAIN UI FRAME =================
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 520, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160) -- Center Screen
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
+MainFrame.BackgroundTransparency = 0.04
+MainFrame.Visible = false
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 18)
+MainCorner.Parent = MainFrame
+
+-- Animated UI Stroke Aura
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 2.5
+MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+MainStroke.Color = Color3.fromRGB(252, 209, 22)
+MainStroke.Parent = MainFrame
+
+-- Breathing Aura Loop
+task.spawn(function()
+    local auraColors = {
+        Color3.fromRGB(252, 209, 22), -- Neon Gold
+        Color3.fromRGB(255, 0, 85),   -- Crimson Red
+        Color3.fromRGB(0, 150, 255)   -- Cyber Cyan
+    }
+    local counter = 1
+    while ScreenGui.Parent do
+        local nextColor = auraColors[counter]
+        local tweenInfo = TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+        local tween = TweenService:Create(MainStroke, tweenInfo, {Color = nextColor})
+        tween:Play()
+        tween.Completed:Wait()
+        counter = counter % #auraColors + 1
+    end
+end)
+
+-- Header Bar
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 48)
+Header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 18)
+HeaderCorner.Parent = Header
+
+-- Drag capability on the header
+makeDraggable(MainFrame, Header)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0.6, 0, 1, 0)
+Title.Position = UDim2.new(0, 18, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "PHHUB v3.0"
+Title.TextColor3 = Color3.fromRGB(252, 209, 22)
+Title.TextSize = 16
+Title.Font = Enum.Font.SourceSansBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+-- Control Buttons (Minimize & Close)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -70, 0.5, -15)
+MinBtn.BackgroundTransparency = 1
+MinBtn.Text = "—"
+MinBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
+MinBtn.TextSize = 16
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Parent = Header
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = Header
+
+-- Content Layout Inside MainFrame
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 140, 1, -48)
+Sidebar.Position = UDim2.new(0, 0, 0, 48)
+Sidebar.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainFrame
+
+local ContentArea = Instance.new("Frame")
+ContentArea.Size = UDim2.new(1, -140, 1, -48)
+ContentArea.Position = UDim2.new(0, 140, 0, 48)
+ContentArea.BackgroundTransparency = 1
+ContentArea.Parent = MainFrame
+
+-- Tab Frames Container
+local Tabs = {}
+local TabButtons = {}
+
+local function createTab(name, index)
+    local TabFrame = Instance.new("Frame")
+    TabFrame.Size = UDim2.new(1, 0, 1, 0)
+    TabFrame.BackgroundTransparency = 1
+    TabFrame.Visible = (index == 1)
+    TabFrame.Parent = ContentArea
+    
+    -- Auto grid sorting inside the tab
+    local UIGrid = Instance.new("UIGridLayout")
+    UIGrid.CellSize = UDim2.new(0.5, -10, 0, 48)
+    UIGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+    UIGrid.Parent = TabFrame
+    
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 40)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = name
+    TabBtn.TextColor3 = (index == 1) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
+    TabBtn.TextSize = 13
+    TabBtn.Font = Enum.Font.SourceSansBold
+    TabBtn.Parent = Sidebar
+    
+    TabBtn.MouseButton1Click:Connect(function()
+        sounds.tab()
+        for i, tFrame in ipairs(Tabs) do
+            tFrame.Visible = (i == index)
+            TabButtons[i].TextColor3 = (i == index) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
+        end
+    end)
+    
+    table.insert(Tabs, TabFrame)
+    table.insert(TabButtons, TabBtn)
+    return TabFrame
+end
+
+local TabFarm = createTab("🌾 Farming", 1)
+local TabProg = createTab("🔁 Progression", 2)
+local TabSet = createTab("⚙️ Settings", 3)
+
+-- ================= INTERACTIVE COMPONENT CREATION =================
+local function createToggle(parent, labelText, callback)
+    local Container = Instance.new("Frame")
+    Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+    Container.BorderSizePixel = 0
+    Container.Parent = parent
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Container
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.6, 0, 1, 0)
+    Label.Position = UDim2.new(0, 12, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = labelText
+    Label.TextColor3 = Color3.fromRGB(226, 226, 233)
+    Label.TextSize = 12
+    Label.Font = Enum.Font.SourceSansBold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Container
+
+    local Switch = Instance.new("TextButton")
+    Switch.Size = UDim2.new(0, 42, 0, 22)
+    Switch.Position = UDim2.new(1, -54, 0.5, -11)
+    Switch.BackgroundColor3 = Color3.fromRGB(62, 68, 81)
+    Switch.Text = ""
+    Switch.Parent = Container
+    
+    local SwitchCorner = Instance.new("UICorner")
+    SwitchCorner.CornerRadius = UDim.new(1, 0)
+    SwitchCorner.Parent = Switch
+
+    local Knob = Instance.new("Frame")
+    Knob.Size = UDim2.new(0, 16, 0, 16)
+    Knob.Position = UDim2.new(0, 3, 0.5, -8)
+    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
+    
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local active = false
+    Switch.MouseButton1Click:Connect(function()
+        active = not active
+        if active then
+            sounds.toggleOn()
+            TweenService:Create(Switch, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(0, 230, 118)}):Play()
+            TweenService:Create(Knob, TweenInfo.new(0.25), {Position = UDim2.new(1, -19, 0.5, -8)}):Play()
+        else
+            sounds.toggleOff()
+            TweenService:Create(Switch, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(62, 68, 81)}):Play()
+            TweenService:Create(Knob, TweenInfo.new(0.25), {Position = UDim2.new(0, 3, 0.5, -8)}):Play()
+        end
+        if callback then callback(active) end
+    end)
+end
+
+local function createActionButton(parent, labelText, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+    Btn.Text = labelText
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.TextSize = 12
+    Btn.Font = Enum.Font.SourceSansBold
+    Btn.Parent = parent
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Btn
+
+    Btn.MouseEnter:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(252, 209, 22)}):Play()
+    end)
+    Btn.MouseLeave:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    end)
+    Btn.MouseButton1Click:Connect(function()
+        sounds.tab()
+        if callback then callback() end
+    end)
+end
+
+-- Tab 1 Items
+createToggle(TabFarm, "🌾 Auto Farm", function(state) print("Auto Farm: ", state) end)
+createToggle(TabFarm, "⚔️ Kill Aura", function(state) print("Kill Aura: ", state) end)
+
+-- Tab 2 Items
+createToggle(TabProg, "🔁 Auto Rebirth", function(state) print("Auto Rebirth: ", state) end)
+createToggle(TabProg, "💪 Auto Train", function(state) print("Auto Train: ", state) end)
+
+-- Tab 3 Items
+createActionButton(TabSet, "🕊️ Fly GUI", function() print("Loaded Fly GUI.") end)
+createActionButton(TabSet, "📂 Load Dex", function() print("Dex Loaded.") end)
+createToggle(TabSet, "👻 Noclip", function(state) print("Noclip: ", state) end)
+createActionButton(TabSet, "🔵 Cobalt", function() print("Injected Cobalt.") end)
+
+-- ================= MINIMIZED FLOATING WIDGET (MINIBOX) =================
+local Minibox = Instance.new("TextButton")
+Minibox.Name = "Minibox"
+Minibox.Size = UDim2.new(0, 65, 0, 65)
+-- I-pwesto ang minibox sa gilid para hindi nakaharang sa gitna
+Minibox.Position = UDim2.new(1, -100, 1, -100)
+Minibox.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
+Minibox.Text = "PH"
+Minibox.TextColor3 = Color3.fromRGB(252, 209, 22)
+Minibox.TextSize = 22
+Minibox.Font = Enum.Font.SourceSansBold
+Minibox.Visible = false
+Minibox.Parent = ScreenGui
+
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(0, 18)
+MiniCorner.Parent = Minibox
+
+local MiniStroke = Instance.new("UIStroke")
+MiniStroke.Thickness = 2.5
+MiniStroke.Color = Color3.fromRGB(252, 209, 22)
+MiniStroke.Parent = Minibox
+
+-- Aura dynamic animation para sa Minibox
+task.spawn(function()
+    local colors = {Color3.fromRGB(252, 209, 22), Color3.fromRGB(255, 0, 85), Color3.fromRGB(0, 150, 255)}
+    local counter = 1
+    while ScreenGui.Parent do
+        local tween = TweenService:Create(MiniStroke, TweenInfo.new(3, Enum.EasingStyle.Sine), {Color = colors[counter]})
+        tween:Play()
+        tween.Completed:Wait()
+        counter = counter % #colors + 1
+    end
+end)
+
+makeDraggable(Minibox, Minibox)
+
+-- Coordinates Mechanics (Minimize and Restore Logic)
+MinBtn.MouseButton1Click:Connect(function()
+    sounds.tab()
+    -- Smooth fade out scaling bago i-hide
+    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        MainFrame.Visible = false
+        Minibox.Visible = true
+    end)
+end)
+
+Minibox.MouseButton1Click:Connect(function()
+    sounds.tab()
+    Minibox.Visible = false
+    
+    -- LAGING GITNA ang coordinate lock kapag nag-restore mula sa minibox
+    MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    MainFrame.BackgroundTransparency = 1
+    MainFrame.Visible = true
+    
+    -- Smooth bounce expand transitions
+    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 520, 0, 320),
+        BackgroundTransparency = 0.04
+    }):Play()
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    sounds.tab()
+    ScreenGui:Destroy()
+end)
+
+-- ================= MASSIVE LOADING SCREEN =================
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Name = "LoadingScreen"
+LoadingFrame.Size = UDim2.new(0, 520, 0, 320)
+LoadingFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
+LoadingFrame.BorderSizePixel = 0
+LoadingFrame.Parent = ScreenGui
+
+local LoadingCorner = Instance.new("UICorner")
+LoadingCorner.CornerRadius = UDim.new(0, 18)
+LoadingCorner.Parent = LoadingFrame
+
+local LoadingStroke = Instance.new("UIStroke")
+LoadingStroke.Thickness = 2.5
+LoadingStroke.Color = Color3.fromRGB(252, 209, 22)
+LoadingStroke.Parent = LoadingFrame
+
+local LoadTitle = Instance.new("TextLabel")
+LoadTitle.Size = UDim2.new(1, 0, 0, 40)
+LoadTitle.Position = UDim2.new(0, 0, 0.3, -20)
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Text = "PHHUB v3.0"
+LoadTitle.TextColor3 = Color3.fromRGB(252, 209, 22)
+LoadTitle.TextSize = 28
+LoadTitle.Font = Enum.Font.SourceSansBold
+LoadTitle.Parent = LoadingFrame
+
+local LoadSub = Instance.new("TextLabel")
+LoadSub.Size = UDim2.new(1, 0, 0, 20)
+LoadSub.Position = UDim2.new(0, 0, 0.3, 20)
+LoadSub.BackgroundTransparency = 1
+LoadSub.Text = "AURA BYPASS INTEGRATION"
+LoadSub.TextColor3 = Color3.fromRGB(138, 143, 157)
+LoadSub.TextSize = 11
+LoadSub.Font = Enum.Font.SourceSansBold
+LoadSub.Parent = LoadingFrame
+
+-- Progress track
+local ProgressTrack = Instance.new("Frame")
+ProgressTrack.Size = UDim2.new(0, 320, 0, 8)
+ProgressTrack.Position = UDim2.new(0.5, -160, 0.6, 0)
+ProgressTrack.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
+ProgressTrack.BorderSizePixel = 0
+ProgressTrack.Parent = LoadingFrame
+
+local TrackCorner = Instance.new("UICorner")
+TrackCorner.CornerRadius = UDim.new(1, 0)
+TrackCorner.Parent = ProgressTrack
+
+local ProgressBar = Instance.new("Frame")
+ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(252, 209, 22)
+ProgressBar.BorderSizePixel = 0
+ProgressBar.Parent = ProgressTrack
+
+local BarCorner = Instance.new("UICorner")
+BarCorner.CornerRadius = UDim.new(1, 0)
+BarCorner.Parent = ProgressBar
+
+local StatusText = Instance.new("TextLabel")
+StatusText.Size = UDim2.new(1, 0, 0, 20)
+StatusText.Position = UDim2.new(0, 0, 0.6, 20)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Initiating core structures..."
+StatusText.TextColor3 = Color3.fromRGB(138, 143, 157)
+StatusText.TextSize = 11
+StatusText.Font = Enum.Font.Code
+StatusText.Parent = LoadingFrame
+
+-- Loading simulation runtime logic
+local logs = {
+    "Resolving Roblox memory layers...",
+    "Bypassing anticheat network packets...",
+    "Injecting Luau virtual client framework...",
+    "Finalizing dynamic Cyberpunk Aura GUI...",
+    "Bypass Complete. Welcome back!"
+}
+
+task.spawn(function()
+    sounds.loading()
+    
+    for i = 1, #logs do
+        StatusText.Text = logs[i]
+        
+        local tween = TweenService:Create(ProgressBar, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(i / #logs, 0, 1, 0)
+        })
+        tween:Play()
+        tween.Completed:Wait()
+        task.wait(0.2)
+    end
+    
+    sounds.success()
+    
+    -- Smoothly fade out loading panel
+    local tweenOut = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1
+    })
+    tweenOut:Play()
+    tweenOut.Completed:Connect(function()
+        LoadingFrame:Destroy()
+        
+        -- Magpakita ang Main Menu gamit ang Bounce entry
+        MainFrame.Size = UDim2.new(0, 0, 0, 0)
+        MainFrame.BackgroundTransparency = 1
+        MainFrame.Visible = true
+        
+        TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 520, 0, 320),
+            BackgroundTransparency = 0.04
+        }):Play()
+    end)
+end)
+
+print("🔥 PHHUB v3.0: Luau High-Performance Aura UI Engine Active!")
