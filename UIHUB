@@ -1,693 +1,430 @@
---[[
-    PHHUB v3.0 - Aura Cyberpunk Edition
-    Optimized & Ported from High-Performance JS Framework
-    Author: Gemini AI Collaborator
-    Repository: GitHub Hosted (Loadstring Ready)
---]]
+-- PHHUB v3.0 LUA EDITION
+-- Auto-Generated for Roblox
 
-local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Safe GUI routing
-local ParentGui = nil
-pcall(function() ParentGui = game:GetService("CoreGui") end)
-if not ParentGui then ParentGui = PlayerGui end
+-- 1. CLEANUP
+local existing = CoreGui:FindFirstChild("PHHUB_V3_WEB")
+if existing then existing:Destroy() end
 
--- Remove previous UI duplicates
-if ParentGui:FindFirstChild("PHHUB_v3_Roblox") then
-    ParentGui["PHHUB_v3_Roblox"]:Destroy()
-end
-
--- Screen Base Container
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PHHUB_v3_Roblox"
+ScreenGui.Name = "PHHUB_V3_WEB"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = ParentGui
+ScreenGui.Parent = CoreGui
 
--- ================= SOUND CONTROLLERS =================
-local function playAudio(assetId, pitch, volume)
+-- 2. STATE & THEMES
+local LangIndex = 1
+local LangCodes = {"en", "tl", "id"}
+local CurrentTheme = "cyberpunk"
+local SelectedGame = nil
+local MasterVolume = 0.4
+local IsNoclipping = false
+local NoclipConnection = nil
+
+local Langs = {
+    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt", trans = "🌐 Lang: EN", robloxId = "🆔 Roblox ID Input", speed = "⚡ Speed", search = "🔍 Search Game..." },
+    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt", trans = "🌐 Wika: TL", robloxId = "🆔 Roblox ID Input", speed = "⚡ Bilis", search = "🔍 Hanapin ang Laro..." },
+    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt", trans = "🌐 Bahasa: ID", robloxId = "🆔 Input ID Roblox", speed = "⚡ Kecepatan", search = "🔍 Cari Game..." }
+}
+
+local GameDatabase = {
+    garden2 = { name = "Grow a Garden 2", cheats = {"🌾 Auto Collect", "🌱 Auto Plant", "💰 Auto Buy Upgrades", "🚜 Auto Harvest"} },
+    brainrot = { name = "Brainrot Simulator", cheats = {"🧠 Auto Brainwash", "🚽 Spam Skibidi", "🕶️ Collect Rizz", "💀 Auto Farm Brains"} },
+    bloxfruits = { name = "Blox Fruits", cheats = {"⚔️ Auto Farm Level", "👹 Auto Boss", "👁️ ESP Players", "🍎 Auto Collect Fruits"} },
+    pet99 = { name = "Pet Simulator 99", cheats = {"🐶 Auto Hatch", "💰 Auto Coins", "🧲 Magnet ESP", "💎 Auto Gems"} },
+    arsenal = { name = "Arsenal", cheats = {"🎯 Aimbot", "👁️ Wallhack", "🏃 Speed Hack", "🔫 Infinite Ammo"} }
+}
+
+local Themes = {
+    cyberpunk = { bg = Color3.fromRGB(10, 11, 14), border = Color3.fromRGB(252, 209, 22), text = Color3.fromRGB(252, 209, 22), item = Color3.fromRGB(25, 27, 34) },
+    hk = { bg = Color3.fromRGB(255, 235, 240), border = Color3.fromRGB(255, 102, 163), text = Color3.fromRGB(255, 26, 117), item = Color3.fromRGB(255, 255, 255) },
+    matrix = { bg = Color3.fromRGB(10, 15, 10), border = Color3.fromRGB(0, 255, 0), text = Color3.fromRGB(0, 255, 0), item = Color3.fromRGB(15, 25, 15) },
+    space = { bg = Color3.fromRGB(10, 10, 20), border = Color3.fromRGB(0, 229, 255), text = Color3.fromRGB(0, 229, 255), item = Color3.fromRGB(15, 15, 30) },
+    doom = { bg = Color3.fromRGB(20, 5, 5), border = Color3.fromRGB(255, 0, 0), text = Color3.fromRGB(255, 0, 0), item = Color3.fromRGB(30, 10, 10) },
+    onepiece = { bg = Color3.fromRGB(15, 15, 10), border = Color3.fromRGB(255, 183, 0), text = Color3.fromRGB(255, 183, 0), item = Color3.fromRGB(25, 25, 20) },
+    naruto = { bg = Color3.fromRGB(20, 12, 5), border = Color3.fromRGB(255, 115, 0), text = Color3.fromRGB(255, 115, 0), item = Color3.fromRGB(30, 18, 10) },
+    major = { bg = Color3.fromRGB(5, 10, 20), border = Color3.fromRGB(0, 132, 255), text = Color3.fromRGB(0, 132, 255), item = Color3.fromRGB(10, 20, 30) },
+    jjk = { bg = Color3.fromRGB(15, 5, 20), border = Color3.fromRGB(160, 32, 240), text = Color3.fromRGB(160, 32, 240), item = Color3.fromRGB(25, 10, 30) }
+}
+
+-- Sounds
+local function PlaySound(id)
     local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://" .. tostring(assetId)
-    sound.Pitch = pitch or 1
-    sound.Volume = volume or 0.5
-    sound.PlayOnRemove = true
-    sound.Parent = workspace
-    sound:Destroy()
+    sound.SoundId = id == "click" and "rbxassetid://689508666" or "rbxassetid://689508249"
+    sound.Volume = MasterVolume
+    sound.Parent = CoreGui
+    sound:Play()
+    game.Debris:AddItem(sound, 2)
 end
 
-local sounds = {
-    loading = function() playAudio(12222124, 1.2, 0.4) end,
-    success = function() 
-        task.spawn(function()
-            playAudio(12221967, 1.2, 0.4) task.wait(0.1)
-            playAudio(12221967, 1.5, 0.4) task.wait(0.1)
-            playAudio(12221967, 1.8, 0.5)
-        end)
-    end,
-    tab = function() playAudio(12221967, 1.4, 0.3) end,
-    toggleOn = function() playAudio(12221967, 2.0, 0.4) end,
-    toggleOff = function() playAudio(12221967, 0.8, 0.4) end,
-    alert = function() playAudio(6118151110, 1.0, 0.8) end
-}
-
--- ================= TRANSLATION ENGINE =================
-local isTagalog = false
-local registeredElements = {} 
-
-local lang = {
-    en = {
-        farm = "🌾 Farming", prog = "🔁 Progression", set = "⚙️ Settings",
-        auto = "🌾 Auto Farm", aura = "⚔️ Kill Aura",
-        rebirth = "🔁 Auto Rebirth", train = "💪 Auto-Train Stats",
-        fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip",
-        dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt",
-        trans = "🇵🇭 Tagalog", phonk = "🎵 Play Phonk",
-        speed = "⚡ Speed (E.g. 50)", sound = "🎵 Sound ID Input"
-    },
-    tl = {
-        farm = "🌾 Pag-Farm", prog = "🔁 Pag-Unlad", set = "⚙️ Mga Setting",
-        auto = "🌾 Kusang Farm", aura = "⚔️ Patay Aura",
-        rebirth = "🔁 Auto Rebirth", train = "💪 Sanayin ang Stats",
-        fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)",
-        dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt",
-        trans = "🇺🇸 English", phonk = "🎵 Patugtugin Phonk",
-        speed = "⚡ Bilis (Hal. 50)", sound = "🎵 Sound ID"
-    }
-}
-
-local function updateLanguage()
-    local selected = isTagalog and lang.tl or lang.en
-    for element, key in pairs(registeredElements) do
-        if element:IsA("TextLabel") or element:IsA("TextButton") then
-            element.Text = selected[key]
-        elseif element:IsA("TextBox") then
-            element.PlaceholderText = selected[key]
-        end
-    end
+-- 3. UI UTILITIES
+local function Create(className, props)
+    local inst = Instance.new(className)
+    for k, v in pairs(props) do inst[k] = v end
+    return inst
 end
 
--- ================= DRAG ENGINE =================
-local function makeDraggable(frame, handle)
+local function MakeDraggable(topbar, object)
     local dragging, dragInput, dragStart, startPos
-    handle.InputBegan:Connect(function(input)
+    topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+            startPos = object.Position
         end
     end)
-    handle.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
+    topbar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
     end)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            object.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
     end)
 end
 
--- ================= MAIN PANEL FRAME =================
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 520, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
-MainFrame.BackgroundTransparency = 0.05
-MainFrame.Visible = false
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
+-- 4. BUILD MAIN UI
+local Notification = Create("TextLabel", {Parent=ScreenGui, Size=UDim2.new(0, 200, 0, 40), Position=UDim2.new(1, -220, 0, -50), BackgroundColor3=Color3.fromRGB(0, 230, 118), TextColor3=Color3.new(0,0,0), Font=Enum.Font.GothamBold, TextSize=14, Text="Notification", UICorner=Create("UICorner", {CornerRadius=UDim.new(0,8)})})
+local function Notify(text)
+    Notification.Text = text
+    TweenService:Create(Notification, TweenInfo.new(0.4), {Position=UDim2.new(1, -220, 0, 20)}):Play()
+    task.delay(2.5, function() TweenService:Create(Notification, TweenInfo.new(0.4), {Position=UDim2.new(1, -220, 0, -50)}):Play() end)
+end
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 18)
-MainCorner.Parent = MainFrame
+local MainPanel = Create("Frame", {Parent=ScreenGui, Size=UDim2.new(0, 580, 0, 380), Position=UDim2.new(0.5, -290, 0.5, -190), BackgroundColor3=Themes.cyberpunk.bg, BorderSizePixel=0, Visible=false, ClipsDescendants=true})
+local MainStroke = Create("UIStroke", {Parent=MainPanel, Color=Themes.cyberpunk.border, Thickness=2.5})
+Create("UICorner", {Parent=MainPanel, CornerRadius=UDim.new(0,18)})
 
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Thickness = 2.5
-MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-MainStroke.Color = Color3.fromRGB(252, 209, 22)
-MainStroke.Parent = MainFrame
+local Header = Create("Frame", {Parent=MainPanel, Size=UDim2.new(1, 0, 0, 48), BackgroundColor3=Color3.fromRGB(18, 20, 26), BorderSizePixel=0})
+local Title = Create("TextLabel", {Parent=Header, Size=UDim2.new(0, 200, 1, 0), Position=UDim2.new(0, 15, 0, 0), BackgroundTransparency=1, Text="PHHUB v3.0", TextColor3=Themes.cyberpunk.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left})
 
-task.spawn(function()
-    local colors = {Color3.fromRGB(252, 209, 22), Color3.fromRGB(255, 0, 85), Color3.fromRGB(0, 150, 255)}
-    local counter = 1
-    while ScreenGui.Parent do
-        local tween = TweenService:Create(MainStroke, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = colors[counter]})
-        tween:Play()
-        tween.Completed:Wait()
-        counter = counter % #colors + 1
-    end
+local MinBtn = Create("TextButton", {Parent=Header, Size=UDim2.new(0, 30, 1, 0), Position=UDim2.new(1, -70, 0, 0), BackgroundTransparency=1, Text="—", TextColor3=Color3.fromRGB(160, 165, 181), Font=Enum.Font.GothamBold, TextSize=16})
+local CloseBtn = Create("TextButton", {Parent=Header, Size=UDim2.new(0, 30, 1, 0), Position=UDim2.new(1, -35, 0, 0), BackgroundTransparency=1, Text="X", TextColor3=Color3.fromRGB(160, 165, 181), Font=Enum.Font.GothamBold, TextSize=16})
+MakeDraggable(Header, MainPanel)
+
+local Sidebar = Create("ScrollingFrame", {Parent=MainPanel, Size=UDim2.new(0, 150, 1, -48), Position=UDim2.new(0, 0, 0, 48), BackgroundColor3=Color3.fromRGB(8, 9, 11), BorderSizePixel=0, ScrollBarThickness=2})
+local SidebarLayout = Create("UIListLayout", {Parent=Sidebar, Padding=UDim.new(0, 5)})
+Create("UIPadding", {Parent=Sidebar, PaddingTop=UDim.new(0,10), PaddingLeft=UDim.new(0,10), PaddingRight=UDim.new(0,10)})
+
+local ContentArea = Create("Frame", {Parent=MainPanel, Size=UDim2.new(1, -150, 1, -48), Position=UDim2.new(0, 150, 0, 48), BackgroundTransparency=1})
+
+local Minibox = Create("TextButton", {Parent=ScreenGui, Size=UDim2.new(0, 65, 0, 65), Position=UDim2.new(1, -85, 1, -85), BackgroundColor3=Color3.fromRGB(13, 14, 18), Text="PH", TextColor3=Themes.cyberpunk.text, Font=Enum.Font.GothamBold, TextSize=22, Visible=false})
+local MiniStroke = Create("UIStroke", {Parent=Minibox, Color=Themes.cyberpunk.border, Thickness=2.5})
+Create("UICorner", {Parent=Minibox, CornerRadius=UDim.new(0,18)})
+MakeDraggable(Minibox, Minibox)
+
+MinBtn.MouseButton1Click:Connect(function()
+    PlaySound("click")
+    MainPanel.Visible = false
+    Minibox.Visible = true
 end)
 
--- Header Bar
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 48)
-Header.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
-Header.BorderSizePixel = 0
-Header.Parent = MainFrame
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 18)
-HeaderCorner.Parent = Header
+Minibox.MouseButton1Click:Connect(function()
+    PlaySound("click")
+    Minibox.Visible = false
+    MainPanel.Visible = true
+    MainPanel.Position = UDim2.new(0.5, -290, 0.5, -190) -- Recenter
+end)
 
-makeDraggable(MainFrame, Header)
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.6, 0, 1, 0)
-Title.Position = UDim2.new(0, 18, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "PHHUB v3.0"
-Title.TextColor3 = Color3.fromRGB(252, 209, 22)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
-
--- Controls
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -70, 0.5, -15)
-MinBtn.BackgroundTransparency = 1
-MinBtn.Text = "—"
-MinBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
-MinBtn.TextSize = 16
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Parent = Header
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
-CloseBtn.TextSize = 16
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Parent = Header
-
--- Layout Structure
-local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 140, 1, -48)
-Sidebar.Position = UDim2.new(0, 0, 0, 48)
-Sidebar.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
-
-local SidebarLayout = Instance.new("UIListLayout")
-SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-SidebarLayout.Padding = UDim.new(0, 6)
-SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SidebarLayout.Parent = Sidebar
-
-local SidebarPadding = Instance.new("UIPadding")
-SidebarPadding.PaddingTop = UDim.new(0, 12)
-SidebarPadding.PaddingLeft = UDim.new(0, 8)
-SidebarPadding.PaddingRight = UDim.new(0, 8)
-SidebarPadding.Parent = Sidebar
-
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -140, 1, -48)
-ContentArea.Position = UDim2.new(0, 140, 0, 48)
-ContentArea.BackgroundTransparency = 1
-ContentArea.Parent = MainFrame
-
--- ================= TAB INITIATOR =================
+-- 5. TAB SYSTEM & ELEMENTS
 local Tabs = {}
-local TabButtons = {}
+local Translatable = {}
+local ThemeElements = { Text = {Title, Minibox}, Bgs = {MainPanel}, Borders = {MainStroke, MiniStroke}, Items = {} }
 
-local function createTab(nameKey, index)
-    local TabFrame = Instance.new("ScrollingFrame")
-    TabFrame.Size = UDim2.new(1, 0, 1, 0)
-    TabFrame.BackgroundTransparency = 1
-    TabFrame.BorderSizePixel = 0
-    TabFrame.ScrollBarThickness = 3
-    TabFrame.ScrollBarImageColor3 = Color3.fromRGB(252, 209, 22)
-    TabFrame.Visible = (index == 1)
-    TabFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    TabFrame.Parent = ContentArea
+local function CreateTab(key, isFirst)
+    local btn = Create("TextButton", {Parent=Sidebar, Size=UDim2.new(1, 0, 0, 35), BackgroundTransparency=isFirst and 0 or 1, BackgroundColor3=Color3.fromRGB(20, 22, 27), Text="", Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left})
+    Create("UICorner", {Parent=btn, CornerRadius=UDim.new(0,5)})
+    Create("UIPadding", {Parent=btn, PaddingLeft=UDim.new(0, 10)})
     
-    local UIGrid = Instance.new("UIGridLayout")
-    UIGrid.CellSize = UDim2.new(0.5, -14, 0, 48) 
-    UIGrid.CellPadding = UDim2.new(0, 8, 0, 8)
-    UIGrid.SortOrder = Enum.SortOrder.LayoutOrder
-    UIGrid.Parent = TabFrame
+    local txt = Create("TextLabel", {Parent=btn, Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=Langs.en[key] or key, TextColor3=isFirst and Themes.cyberpunk.text or Color3.fromRGB(138, 143, 157), Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left})
+    table.insert(Translatable, {node=txt, key=key, type="text"})
+    table.insert(ThemeElements.Text, txt)
     
-    local UIPadding = Instance.new("UIPadding")
-    UIPadding.PaddingLeft = UDim.new(0, 10)
-    UIPadding.PaddingRight = UDim.new(0, 10)
-    UIPadding.PaddingTop = UDim.new(0, 10)
-    UIPadding.PaddingBottom = UDim.new(0, 10)
-    UIPadding.Parent = TabFrame
-
-    local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(1, 0, 0, 36)
-    TabBtn.BackgroundColor3 = (index == 1) and Color3.fromRGB(20, 22, 27) or Color3.fromRGB(12, 13, 16)
-    TabBtn.BackgroundTransparency = (index == 1) and 0 or 1
-    TabBtn.Text = lang.en[nameKey]
-    TabBtn.TextColor3 = (index == 1) and Color3.fromRGB(252, 209, 22) or Color3.fromRGB(138, 143, 157)
-    TabBtn.TextSize = 12
-    TabBtn.Font = Enum.Font.GothamBold
-    TabBtn.LayoutOrder = index
-    TabBtn.Parent = Sidebar
+    local pane = Create("ScrollingFrame", {Parent=ContentArea, Size=UDim2.new(1, -20, 1, -20), Position=UDim2.new(0, 10, 0, 10), BackgroundTransparency=1, Visible=isFirst, ScrollBarThickness=2})
+    local layout = Create("UIGridLayout", {Parent=pane, CellSize=UDim2.new(0.48, 0, 0, 48), CellPadding=UDim2.new(0, 10, 0, 10), SortOrder=Enum.SortOrder.LayoutOrder})
     
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 8)
-    BtnCorner.Parent = TabBtn
+    table.insert(Tabs, {btn=btn, txt=txt, pane=pane})
     
-    registeredElements[TabBtn] = nameKey
-    
-    TabBtn.MouseButton1Click:Connect(function()
-        sounds.tab()
-        for i, tFrame in ipairs(Tabs) do
-            tFrame.Visible = (i == index)
-            local btn = TabButtons[i]
-            if i == index then
-                TweenService:Create(btn, TweenInfo.new(0.25), {
-                    TextColor3 = Color3.fromRGB(252, 209, 22),
-                    BackgroundTransparency = 0,
-                    BackgroundColor3 = Color3.fromRGB(20, 22, 27)
-                }):Play()
-            else
-                TweenService:Create(btn, TweenInfo.new(0.25), {
-                    TextColor3 = Color3.fromRGB(138, 143, 157),
-                    BackgroundTransparency = 1
-                }):Play()
-            end
+    btn.MouseButton1Click:Connect(function()
+        PlaySound("click")
+        for _, t in pairs(Tabs) do
+            t.btn.BackgroundTransparency = 1
+            t.txt.TextColor3 = Color3.fromRGB(138, 143, 157)
+            t.pane.Visible = false
         end
+        btn.BackgroundTransparency = 0
+        txt.TextColor3 = Themes[CurrentTheme].text
+        pane.Visible = true
     end)
-    
-    table.insert(Tabs, TabFrame)
-    table.insert(TabButtons, TabBtn)
-    return TabFrame
+    return pane
 end
 
-local TabFarm = createTab("farm", 1)
-local TabProg = createTab("prog", 2)
-local TabSet = createTab("set", 3)
+local function UpdateLanguage()
+    local dict = Langs[LangCodes[LangIndex]]
+    for _, item in pairs(Translatable) do
+        if item.type == "text" then item.node.Text = dict[item.key] or item.key
+        elseif item.type == "placeholder" then item.node.PlaceholderText = dict[item.key] or item.key end
+    end
+end
 
--- ================= WRAPPER CONTAINER ENGINE =================
-local function createToggle(parent, textKey, callback)
-    local Container = Instance.new("Frame")
-    Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-    Container.BorderSizePixel = 0
-    Container.Parent = parent
+local function ChangeTheme(themeId)
+    local t = Themes[themeId]
+    CurrentTheme = themeId
+    MainPanel.BackgroundColor3 = t.bg
+    MainStroke.Color = t.border
+    MiniStroke.Color = t.border
+    Minibox.TextColor3 = t.text
+    Title.TextColor3 = t.text
     
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 10)
-    Corner.Parent = Container
+    for _, txt in pairs(ThemeElements.Text) do
+        if txt.Parent and txt.Parent.BackgroundTransparency == 0 then txt.TextColor3 = t.text end
+    end
+    for _, item in pairs(ThemeElements.Items) do
+        item.BackgroundColor3 = t.item
+    end
+end
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 1, 0)
-    Label.Position = UDim2.new(0, 12, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = lang.en[textKey]
-    Label.TextColor3 = Color3.fromRGB(226, 226, 233)
-    Label.TextSize = 11
-    Label.Font = Enum.Font.GothamBold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Container
+-- Component Creators
+local function AddItem(parent, fullWidth)
+    local item = Create("Frame", {Parent=parent, BackgroundColor3=Themes[CurrentTheme].item})
+    Create("UICorner", {Parent=item, CornerRadius=UDim.new(0,8)})
+    table.insert(ThemeElements.Items, item)
+    if fullWidth then
+        -- Force span 2 hack by changing size (UIGridLayout limitation bypass needs absolute sizing if mixed, but we'll adapt)
+        -- In Roblox UIGridLayout, spanning is hard. We will wrap fullwidth items outside grid or just let grid handle it
+    end
+    return item
+end
+
+local function CreateToggle(parent, key, callback)
+    local item = AddItem(parent)
+    local txt = Create("TextLabel", {Parent=item, Size=UDim2.new(0.7,0,1,0), Position=UDim2.new(0,10,0,0), BackgroundTransparency=1, TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left})
+    if Langs.en[key] then table.insert(Translatable, {node=txt, key=key, type="text"}); txt.Text = Langs.en[key] else txt.Text = key end
     
-    registeredElements[Label] = textKey
-
-    local Switch = Instance.new("TextButton")
-    Switch.Size = UDim2.new(0, 42, 0, 22)
-    Switch.Position = UDim2.new(1, -54, 0.5, -11)
-    Switch.BackgroundColor3 = Color3.fromRGB(62, 68, 81)
-    Switch.Text = ""
-    Switch.Parent = Container
+    local sw = Create("Frame", {Parent=item, Size=UDim2.new(0, 42, 0, 22), Position=UDim2.new(1, -52, 0.5, -11), BackgroundColor3=Color3.fromRGB(62, 68, 81), UICorner=Create("UICorner", {CornerRadius=UDim.new(1,0)})})
+    local knob = Create("Frame", {Parent=sw, Size=UDim2.new(0, 16, 0, 16), Position=UDim2.new(0, 3, 0.5, -8), BackgroundColor3=Color3.new(1,1,1), UICorner=Create("UICorner", {CornerRadius=UDim.new(1,0)})})
+    local btn = Create("TextButton", {Parent=sw, Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=""})
     
-    local SwitchCorner = Instance.new("UICorner")
-    SwitchCorner.CornerRadius = UDim.new(1, 0)
-    SwitchCorner.Parent = Switch
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        PlaySound("click")
+        state = not state
+        TweenService:Create(sw, TweenInfo.new(0.3), {BackgroundColor3=state and Color3.fromRGB(0, 230, 118) or Color3.fromRGB(62, 68, 81)}):Play()
+        TweenService:Create(knob, TweenInfo.new(0.3), {Position=UDim2.new(0, state and 23 or 3, 0.5, -8)}):Play()
+        callback(state)
+    end)
+end
 
-    local Knob = Instance.new("Frame")
-    Knob.Size = UDim2.new(0, 16, 0, 16)
-    Knob.Position = UDim2.new(0, 3, 0.5, -8)
-    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Knob.BorderSizePixel = 0
-    Knob.Parent = Switch
-    
-    local KnobCorner = Instance.new("UICorner")
-    KnobCorner.CornerRadius = UDim.new(1, 0)
-    KnobCorner.Parent = Knob
+local function CreateBtn(parent, key, callback)
+    local item = AddItem(parent)
+    local btn = Create("TextButton", {Parent=item, Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, TextColor3=Color3.new(1,1,1), Font=Enum.Font.GothamBold, TextSize=12})
+    if Langs.en[key] then table.insert(Translatable, {node=btn, key=key, type="text"}); btn.Text = Langs.en[key] else btn.Text = key end
+    btn.MouseButton1Click:Connect(function() PlaySound("click"); callback() end)
+end
 
-    local active = false
-    Switch.MouseButton1Click:Connect(function()
-        active = not active
-        if active then
-            sounds.toggleOn()
-            TweenService:Create(Switch, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(0, 230, 118)}):Play()
-            TweenService:Create(Knob, TweenInfo.new(0.25), {Position = UDim2.new(1, -19, 0.5, -8)}):Play()
-        else
-            sounds.toggleOff()
-            TweenService:Create(Switch, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(62, 68, 81)}):Play()
-            TweenService:Create(Knob, TweenInfo.new(0.25), {Position = UDim2.new(0, 3, 0.5, -8)}):Play()
+-- 6. TABS CONFIGURATION
+local TabFarm = CreateTab("farm", true)
+local TabGames = CreateTab("gamelist", false)
+local TabSettings = CreateTab("set", false)
+local TabThemes = CreateTab("themes", false)
+local TabScripts = CreateTab("scripts", false)
+
+-- Farming Tab Setup
+local function RenderFarming()
+    for _,v in pairs(TabFarm:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+    if not SelectedGame then
+        local msg = Create("TextLabel", {Parent=TabFarm, Size=UDim2.new(2,10,0,48), BackgroundTransparency=1, Text="Please select a game first.", TextColor3=Color3.fromRGB(138, 143, 157), Font=Enum.Font.GothamItalic, TextSize=12})
+    else
+        for _, cheat in pairs(GameDatabase[SelectedGame].cheats) do
+            CreateToggle(TabFarm, cheat, function(s) Notify(cheat .. " -> " .. tostring(s)) end)
         end
-        if callback then callback(active) end
+    end
+end
+RenderFarming()
+
+-- Game List Tab
+for gameKey, data in pairs(GameDatabase) do
+    CreateBtn(TabGames, data.name, function()
+        SelectedGame = gameKey
+        Notify("Selected: " .. data.name)
+        RenderFarming()
     end)
 end
 
-local function createActionButton(parent, textKey, callback)
-    local Container = Instance.new("Frame")
-    Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-    Container.BorderSizePixel = 0
-    Container.Parent = parent
-    
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 10)
-    Corner.Parent = Container
-
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.BackgroundTransparency = 1
-    Btn.Text = lang.en[textKey]
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.TextSize = 11
-    Btn.Font = Enum.Font.GothamBold
-    Btn.Parent = Container
-    
-    registeredElements[Btn] = textKey
-
-    Btn.MouseEnter:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(252, 209, 22)}):Play()
-    end)
-    Btn.MouseLeave:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-    end)
-    Btn.MouseButton1Click:Connect(function()
-        sounds.tab()
-        if callback then callback() end
-    end)
-end
-
-local function createTextBox(parent, placeholderKey, callback)
-    local Container = Instance.new("Frame")
-    Container.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-    Container.BorderSizePixel = 0
-    Container.Parent = parent
-    
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 10)
-    Corner.Parent = Container
-
-    local TextBox = Instance.new("TextBox")
-    TextBox.Size = UDim2.new(1, -20, 1, 0)
-    TextBox.Position = UDim2.new(0, 10, 0, 0)
-    TextBox.BackgroundTransparency = 1
-    TextBox.PlaceholderText = lang.en[placeholderKey]
-    TextBox.PlaceholderColor3 = Color3.fromRGB(138, 143, 157)
-    TextBox.Text = ""
-    TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextBox.TextSize = 11
-    TextBox.Font = Enum.Font.GothamBold
-    TextBox.Parent = Container
-    
-    local Border = Instance.new("UIStroke")
-    Border.Thickness = 1
-    Border.Color = Color3.fromRGB(255, 255, 255)
-    Border.Transparency = 0.95
-    Border.Parent = Container
-    
-    registeredElements[TextBox] = placeholderKey
-    
-    TextBox.Focused:Connect(function()
-        TweenService:Create(Border, TweenInfo.new(0.2), {Color = Color3.fromRGB(252, 209, 22), Transparency = 0}):Play()
-    end)
-    TextBox.FocusLost:Connect(function()
-        TweenService:Create(Border, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 255, 255), Transparency = 0.95}):Play()
-        sounds.tab()
-        if callback then callback(TextBox.Text) end
-    end)
-end
-
--- ================= ATTACHING ALL ITEMS =================
-
--- TAB 1: Farming Tab
-createToggle(TabFarm, "auto", function(state) print("Auto Farm: ", state) end)
-createToggle(TabFarm, "aura", function(state) print("Kill Aura: ", state) end)
-
--- TAB 2: Progression Tab
-createToggle(TabProg, "rebirth", function(state) print("Auto Rebirth: ", state) end)
-createToggle(TabProg, "train", function(state) print("Auto Train: ", state) end)
-
--- TAB 3: Settings Tab (LOADSTRINGS ATTACHED)
-createActionButton(TabSet, "fly", function()
-    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))() end)
+-- Settings Tab & Working GitHub Scripts
+CreateBtn(TabSettings, "fly", function()
+    Notify("Executing Fly GUI (GitHub)...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Nicuse/RobloxScripts/main/BypassedFly.lua"))()
 end)
 
-createToggle(TabSet, "noclip", function(state) 
-    if state then
-        _G.Noclip = game:GetService("RunService").Stepped:Connect(function()
+CreateToggle(TabSettings, "noclip", function(state)
+    IsNoclipping = state
+    if IsNoclipping then
+        NoclipConnection = RunService.Stepped:Connect(function()
             if LocalPlayer.Character then
                 for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                     if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
         end)
+        Notify("Noclip Enabled")
     else
-        if _G.Noclip then _G.Noclip:Disconnect() _G.Noclip = nil end
+        if NoclipConnection then NoclipConnection:Disconnect() end
+        Notify("Noclip Disabled")
     end
 end)
 
-createActionButton(TabSet, "dex", function()
-    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))() end)
+CreateBtn(TabSettings, "dex", function()
+    Notify("Loading Dex Explorer...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
 end)
 
-createActionButton(TabSet, "cobalt", function()
-    task.spawn(function()
-        pcall(function() loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))() end)
-    end)
+CreateBtn(TabSettings, "cobalt", function()
+    Notify("Loading Cobalt (Infinite Yield)...")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
 end)
 
-createTextBox(TabSet, "speed", function(text)
-    local value = tonumber(text)
-    if value then
-        local function setSpeed(char)
-            local hum = char:WaitForChild("Humanoid", 5)
-            if hum then hum.WalkSpeed = value end
-        end
-        if LocalPlayer.Character then setSpeed(LocalPlayer.Character) end
-        LocalPlayer.CharacterAdded:Connect(setSpeed)
+CreateBtn(TabSettings, "trans", function()
+    LangIndex = (LangIndex % #LangCodes) + 1
+    UpdateLanguage()
+    Notify("Language updated!")
+end)
+
+-- Custom Speed Button (Walkspeed)
+CreateBtn(TabSettings, "speed", function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = 100
+        Notify("Speed set to 100")
     end
 end)
 
-createTextBox(TabSet, "sound", function(text)
-    local id = tonumber(text)
-    if id then playAudio(id, 1, 0.8) end
-end)
-
-createActionButton(TabSet, "trans", function()
-    isTagalog = not isTagalog
-    updateLanguage()
-end)
-
-local loopSound = nil
-createToggle(TabSet, "phonk", function(state)
-    if state then
-        loopSound = Instance.new("Sound")
-        loopSound.SoundId = "rbxassetid://9043825881"
-        loopSound.Volume = 0.45
-        loopSound.Looped = true
-        loopSound.Parent = workspace
-        loopSound:Play()
-    else
-        if loopSound then loopSound:Stop() loopSound:Destroy() loopSound = nil end
-    end
-end)
-
--- ================= FLOATING MINIBOX =================
-local Minibox = Instance.new("TextButton")
-Minibox.Name = "Minibox"
-Minibox.Size = UDim2.new(0, 65, 0, 65)
-Minibox.Position = UDim2.new(1, -100, 1, -100)
-Minibox.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
-Minibox.Text = "PH"
-Minibox.TextColor3 = Color3.fromRGB(252, 209, 22)
-Minibox.TextSize = 22
-Minibox.Font = Enum.Font.GothamBold
-Minibox.Visible = false
-Minibox.Parent = ScreenGui
-
-local MiniCorner = Instance.new("UICorner")
-MiniCorner.CornerRadius = UDim.new(0, 18)
-MiniCorner.Parent = Minibox
-
-local MiniStroke = Instance.new("UIStroke")
-MiniStroke.Thickness = 2.5
-MiniStroke.Color = Color3.fromRGB(252, 209, 22)
-MiniStroke.Parent = Minibox
-
-task.spawn(function()
-    local colors = {Color3.fromRGB(252, 209, 22), Color3.fromRGB(255, 0, 85), Color3.fromRGB(0, 150, 255)}
-    local counter = 1
-    while ScreenGui.Parent do
-        local tween = TweenService:Create(MiniStroke, TweenInfo.new(3, Enum.EasingStyle.Sine), {Color = colors[counter]})
-        tween:Play()
-        tween.Completed:Wait()
-        counter = counter % #colors + 1
-    end
-end)
-
-makeDraggable(Minibox, Minibox)
-
-MinBtn.MouseButton1Click:Connect(function()
-    sounds.tab()
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1
-    })
-    tween:Play()
-    tween.Completed:Connect(function()
-        MainFrame.Visible = false
-        Minibox.Visible = true 
-    end)
-end)
-
-Minibox.MouseButton1Click:Connect(function()
-    sounds.tab()
-    Minibox.Visible = false
-    MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
-    MainFrame.Size = UDim2.new(0, 0, 0, 0)
-    MainFrame.BackgroundTransparency = 1
-    MainFrame.Visible = true
-    
-    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 520, 0, 320),
-        BackgroundTransparency = 0.05
-    }):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    sounds.tab()
-    if loopSound then loopSound:Destroy() end
-    if _G.Noclip then _G.Noclip:Disconnect() end
-    ScreenGui:Destroy()
-end)
-
--- ================= DYNAMIC LOADING PANEL =================
-local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Name = "LoadingScreen"
-LoadingFrame.Size = UDim2.new(0, 520, 0, 320)
-LoadingFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
-LoadingFrame.BorderSizePixel = 0
-LoadingFrame.Visible = false
-LoadingFrame.Parent = ScreenGui
-
-local LoadingCorner = Instance.new("UICorner")
-LoadingCorner.CornerRadius = UDim.new(0, 18)
-LoadingCorner.Parent = LoadingFrame
-
-local LoadingStroke = Instance.new("UIStroke")
-LoadingStroke.Thickness = 2.5
-LoadingStroke.Color = Color3.fromRGB(252, 209, 22)
-LoadingStroke.Parent = LoadingFrame
-
-local LoadTitle = Instance.new("TextLabel")
-LoadTitle.Size = UDim2.new(1, 0, 0, 40)
-LoadTitle.Position = UDim2.new(0, 0, 0.3, -20)
-LoadTitle.BackgroundTransparency = 1
-LoadTitle.Text = "PHHUB v3.0"
-LoadTitle.TextColor3 = Color3.fromRGB(252, 209, 22)
-LoadTitle.TextSize = 28
-LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Parent = LoadingFrame
-
-local LoadSub = Instance.new("TextLabel")
-LoadSub.Size = UDim2.new(1, 0, 0, 20)
-LoadSub.Position = UDim2.new(0, 0, 0.3, 20)
-LoadSub.BackgroundTransparency = 1
-LoadSub.Text = "AURA BYPASS INTEGRATION"
-LoadSub.TextColor3 = Color3.fromRGB(138, 143, 157)
-LoadSub.TextSize = 11
-LoadSub.Font = Enum.Font.GothamBold
-LoadSub.Parent = LoadingFrame
-
-local ProgressTrack = Instance.new("Frame")
-ProgressTrack.Size = UDim2.new(0, 320, 0, 8)
-ProgressTrack.Position = UDim2.new(0.5, -160, 0.6, 0)
-ProgressTrack.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
-ProgressTrack.BorderSizePixel = 0
-ProgressTrack.Parent = LoadingFrame
-
-local TrackCorner = Instance.new("UICorner")
-TrackCorner.CornerRadius = UDim.new(1, 0)
-TrackCorner.Parent = ProgressTrack
-
-local ProgressBar = Instance.new("Frame")
-ProgressBar.Size = UDim2.new(0, 0, 1, 0)
-ProgressBar.BackgroundColor3 = Color3.fromRGB(252, 209, 22)
-ProgressBar.BorderSizePixel = 0
-ProgressBar.Parent = ProgressTrack
-
-local BarCorner = Instance.new("UICorner")
-BarCorner.CornerRadius = UDim.new(1, 0)
-BarCorner.Parent = ProgressBar
-
-local StatusText = Instance.new("TextLabel")
-StatusText.Size = UDim2.new(1, 0, 0, 20)
-StatusText.Position = UDim2.new(0, 0, 0.6, 20)
-StatusText.BackgroundTransparency = 1
-StatusText.Text = "Initiating core structures..."
-StatusText.TextColor3 = Color3.fromRGB(138, 143, 157)
-StatusText.TextSize = 11
-StatusText.Font = Enum.Font.Code
-StatusText.Parent = LoadingFrame
-
-local logs = {
-    "Resolving Roblox memory layers...",
-    "Bypassing anticheat network packets...",
-    "Injecting Luau virtual client framework...",
-    "Finalizing dynamic Cyberpunk Aura GUI...",
-    "Bypass Complete. Welcome back!"
-}
-
-local function startLoader()
-    LoadingFrame.Visible = true
-    sounds.loading()
-    
-    for i = 1, #logs do
-        StatusText.Text = logs[i]
-        local tween = TweenService:Create(ProgressBar, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(i / #logs, 0, 1, 0)
-        })
-        tween:Play()
-        tween.Completed:Wait()
-        task.wait(0.25)
-    end
-    
-    sounds.success()
-    
-    local tweenOut = TweenService:Create(LoadingFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1
-    })
-    tweenOut:Play()
-    tweenOut.Completed:Connect(function()
-        LoadingFrame:Destroy()
-        
-        MainFrame.Size = UDim2.new(0, 0, 0, 0)
-        MainFrame.BackgroundTransparency = 1
-        MainFrame.Visible = true
-        
-        TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 520, 0, 320),
-            BackgroundTransparency = 0.05
-        }):Play()
+-- Themes Tab
+for id, t in pairs(Themes) do
+    CreateBtn(TabThemes, id:upper(), function()
+        PlaySound("equip")
+        ChangeTheme(id)
+        Notify("Theme: " .. id:upper())
     end)
 end
 
--- Simulan agad ang pag-load nang walang inaasahang version check sa internet
-startLoader()
+-- Script Saver Tab (Read/Write File System)
+local ScriptInputLayout = Create("Frame", {Parent=TabScripts, Size=UDim2.new(2,10,0,150), BackgroundTransparency=1})
+local ScriptName = Create("TextBox", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,30), BackgroundColor3=Color3.fromRGB(30,30,35), TextColor3=Color3.new(1,1,1), PlaceholderText="Game Name...", Font=Enum.Font.Gotham, TextSize=12, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
+local ScriptBody = Create("TextBox", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,70), Position=UDim2.new(0,0,0,35), BackgroundColor3=Color3.fromRGB(30,30,35), TextColor3=Color3.new(1,1,1), PlaceholderText="Paste script here...", Font=Enum.Font.Gotham, TextSize=12, MultiLine=true, TextYAlignment=Enum.TextYAlignment.Top, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
+local SaveBtn = Create("TextButton", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,35), Position=UDim2.new(0,0,0,110), BackgroundColor3=Color3.fromRGB(252,209,22), TextColor3=Color3.new(0,0,0), Text="Save Script", Font=Enum.Font.GothamBold, TextSize=12, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
+
+local ScriptListArea = Create("ScrollingFrame", {Parent=TabScripts, Size=UDim2.new(2,10,0,150), BackgroundTransparency=1})
+local ListLayout = Create("UIListLayout", {Parent=ScriptListArea, Padding=UDim.new(0,5)})
+
+local function GetSavedScripts()
+    if isfile and isfile("PHHUB_Scripts.json") then
+        local succ, res = pcall(function() return HttpService:JSONDecode(readfile("PHHUB_Scripts.json")) end)
+        if succ then return res end
+    end
+    return {}
+end
+
+local function SaveSavedScripts(data)
+    if writefile then writefile("PHHUB_Scripts.json", HttpService:JSONEncode(data)) end
+end
+
+local function RenderScripts()
+    for _,v in pairs(ScriptListArea:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+    local scripts = GetSavedScripts()
+    for idx, sData in pairs(scripts) do
+        local frame = Create("Frame", {Parent=ScriptListArea, Size=UDim2.new(1,0,0,40), BackgroundColor3=Color3.fromRGB(20,22,27), UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
+        Create("TextLabel", {Parent=frame, Size=UDim2.new(0.5,0,1,0), Position=UDim2.new(0,10,0,0), BackgroundTransparency=1, Text=sData.name, TextColor3=Color3.fromRGB(252,209,22), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left})
+        
+        local exe = Create("TextButton", {Parent=frame, Size=UDim2.new(0,40,1,0), Position=UDim2.new(1,-120,0,0), BackgroundTransparency=1, Text="▶", TextColor3=Color3.fromRGB(0, 230, 118)})
+        local cpy = Create("TextButton", {Parent=frame, Size=UDim2.new(0,40,1,0), Position=UDim2.new(1,-80,0,0), BackgroundTransparency=1, Text="📋", TextColor3=Color3.fromRGB(0, 229, 255)})
+        local del = Create("TextButton", {Parent=frame, Size=UDim2.new(0,40,1,0), Position=UDim2.new(1,-40,0,0), BackgroundTransparency=1, Text="🗑️", TextColor3=Color3.fromRGB(255, 0, 85)})
+        
+        exe.MouseButton1Click:Connect(function() 
+            PlaySound("click"); Notify("Executing Script..."); 
+            pcall(function() loadstring(sData.script)() end) 
+        end)
+        cpy.MouseButton1Click:Connect(function() 
+            PlaySound("click"); 
+            if setclipboard then setclipboard(sData.script); Notify("✅ Copied to Clipboard!") end
+        end)
+        del.MouseButton1Click:Connect(function()
+            PlaySound("click")
+            table.remove(scripts, idx)
+            SaveSavedScripts(scripts)
+            RenderScripts()
+            Notify("🗑️ Script Deleted")
+        end)
+    end
+end
+
+SaveBtn.MouseButton1Click:Connect(function()
+    PlaySound("click")
+    if ScriptName.Text ~= "" and ScriptBody.Text ~= "" then
+        local data = GetSavedScripts()
+        table.insert(data, {name = ScriptName.Text, script = ScriptBody.Text})
+        SaveSavedScripts(data)
+        ScriptName.Text = ""
+        ScriptBody.Text = ""
+        RenderScripts()
+        Notify("💾 Script Saved!")
+    end
+end)
+RenderScripts()
+
+-- 7. LOADING SCREEN
+local LoadingPanel = Create("Frame", {Parent=ScreenGui, Size=UDim2.new(0, 550, 0, 350), Position=UDim2.new(0.5, -275, 0.5, -175), BackgroundColor3=Color3.fromRGB(8, 9, 11), BorderSizePixel=0})
+Create("UIStroke", {Parent=LoadingPanel, Color=Themes.cyberpunk.border, Thickness=2.5})
+Create("UICorner", {Parent=LoadingPanel, CornerRadius=UDim.new(0,18)})
+
+Create("TextLabel", {Parent=LoadingPanel, Size=UDim2.new(1,0,0,40), Position=UDim2.new(0,0,0,50), BackgroundTransparency=1, Text="PHHUB v3.0", TextColor3=Themes.cyberpunk.text, Font=Enum.Font.GothamBold, TextSize=28})
+Create("TextLabel", {Parent=LoadingPanel, Size=UDim2.new(1,0,0,20), Position=UDim2.new(0,0,0,90), BackgroundTransparency=1, Text="AURA BYPASS INTEGRATION", TextColor3=Color3.fromRGB(138, 143, 157), Font=Enum.Font.Gotham, TextSize=11})
+
+local Track = Create("Frame", {Parent=LoadingPanel, Size=UDim2.new(0.8,0,0,8), Position=UDim2.new(0.1,0,0.5,0), BackgroundColor3=Color3.fromRGB(25, 27, 34), UICorner=Create("UICorner",{CornerRadius=UDim.new(1,0)})})
+local Bar = Create("Frame", {Parent=Track, Size=UDim2.new(0,0,1,0), BackgroundColor3=Themes.cyberpunk.border, UICorner=Create("UICorner",{CornerRadius=UDim.new(1,0)})})
+
+local StatusTxt = Create("TextLabel", {Parent=LoadingPanel, Size=UDim2.new(1,0,0,20), Position=UDim2.new(0,0,0.5,20), BackgroundTransparency=1, Text="Initiating core structures...", TextColor3=Color3.fromRGB(138, 143, 157), Font=Enum.Font.Code, TextSize=11})
+local QuoteTxt = Create("TextLabel", {Parent=LoadingPanel, Size=UDim2.new(0.8,0,0,40), Position=UDim2.new(0.1,0,0.7,0), BackgroundTransparency=1, Text="\"Motivation: Do your best, and God will do the rest.\"", TextColor3=Themes.cyberpunk.text, Font=Enum.Font.GothamBold, TextSize=13, TextWrapped=true})
+
+local Motivations = {
+    "Motivation: Do your best, and God will do the rest.",
+    "Motivation: Be proud of yourself and who you are.",
+    "Motivation: Small steps every day lead to big results.",
+    "Motivation: Believe you can and you're halfway there.",
+    "Motivation: Push yourself, because no one else is going to do it for you."
+}
+local Logs = {
+    "Authenticating with backend servers...",
+    "Loading Game List configurations...",
+    "Injecting UI Overlays & Themes...",
+    "Finalizing dynamic structures...",
+    "Bypass Complete. Welcome back!"
+}
+
+task.spawn(function()
+    for i = 1, #Logs do
+        StatusTxt.Text = Logs[i]
+        TweenService:Create(Bar, TweenInfo.new(0.8), {Size=UDim2.new(i/#Logs,0,1,0)}):Play()
+        if i % 2 == 0 then QuoteTxt.Text = "\"" .. Motivations[math.random(1, #Motivations)] .. "\"" end
+        task.wait(0.8)
+    end
+    task.wait(0.5)
+    LoadingPanel.Visible = false
+    MainPanel.Visible = true
+    UpdateLanguage()
+    Notify("Successfully Injected!")
+end)
+
+-- Initialize Default Theme Colors (Cyberpunk)
+ChangeTheme(CurrentTheme)
