@@ -1,4 +1,4 @@
--- PHHUB v3.0 - Roblox Lua Conversion (Mobile Optimized & Fixed Functions)
+-- PHHUB v3.1 - The Ultimate Universal Expansion
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 local TargetParent = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
@@ -20,10 +21,8 @@ ScreenGui.Name = "PHHubV3"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
--- GLOBAL VOLUME & CUSTOM MUSIC SETUP (FIXED)
 local MasterVolume = 0.5
 
--- Create or find the CustomMusic sound in SoundService so it plays properly globally
 local CustomMusic = SoundService:FindFirstChild("PHHubCustomMusic")
 if not CustomMusic then
     CustomMusic = Instance.new("Sound")
@@ -51,12 +50,11 @@ local currentTheme = Themes[currentThemeKey]
 local langIndex = 1
 local langCodes = {"en", "tl", "id"}
 local langs = {
-    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt", trans = "🌐 Lang: EN", robloxId = "🎵 Music ID Input", speed = "⚡ Set WalkSpeed", search = "🔍 Search Game..." },
-    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt", trans = "🌐 Wika: TL", robloxId = "🎵 Music ID Input", speed = "⚡ Bilis ng Lakad", search = "🔍 Hanapin ang Laro..." },
-    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt", trans = "🌐 Bahasa: ID", robloxId = "🎵 Input Music ID", speed = "⚡ Atur Kecepatan", search = "🔍 Cari Game..." }
+    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", infjump = "🚀 Infinite Jump", esp = "👁️ Player ESP", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt", trans = "🌐 Lang: EN", robloxId = "🎵 Music ID Input", speed = "⚡ Set WalkSpeed", jump = "🆙 Set JumpPower", search = "🔍 Search Game...", rejoin = "🔄 Rejoin Server" },
+    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", infjump = "🚀 Walang Katapusang Talon", esp = "👁️ Makita Manlalaro (ESP)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt", trans = "🌐 Wika: TL", robloxId = "🎵 Music ID Input", speed = "⚡ Bilis ng Lakad", jump = "🆙 Taas ng Talon", search = "🔍 Hanapin ang Laro...", rejoin = "🔄 Pumasok Ulit (Rejoin)" },
+    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", infjump = "🚀 Lompat Tanpa Batas", esp = "👁️ Player ESP", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt", trans = "🌐 Bahasa: ID", robloxId = "🎵 Input Music ID", speed = "⚡ Atur Kecepatan", jump = "🆙 Atur Lompatan", search = "🔍 Cari Game...", rejoin = "🔄 Masuk Kembali (Rejoin)" }
 }
 
--- GAME DATABASE
 local gameDatabase = {
     garden2 = { name = "Grow a Garden 2", cheats = {"🌾 Auto Collect", "🌱 Auto Plant", "💰 Auto Buy Upgrades", "🚜 Auto Harvest"} },
     brainrot = { name = "Brainrot Simulator", cheats = {"🧠 Auto Brainwash", "🚽 Spam Skibidi", "🕶️ Collect Rizz", "💀 Auto Farm Brains"} },
@@ -68,7 +66,6 @@ local gameDatabase = {
 local selectedGame = nil
 local registeredElements = {}
 
--- NOTIFICATIONS
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Size = UDim2.new(0, 200, 0, 35)
 NotifFrame.Position = UDim2.new(1, -220, 0, 20)
@@ -100,7 +97,6 @@ local function showNotification(text)
     end)
 end
 
--- AUDIO PLAYER (For UI clicks)
 local function playSound(soundId)
     local sound = Instance.new("Sound")
     sound.SoundId = soundId
@@ -110,7 +106,6 @@ local function playSound(soundId)
     sound.Ended:Connect(function() sound:Destroy() end)
 end
 
--- DRAGGABLE MAKER
 local function makeDraggable(frame, handle)
     handle = handle or frame
     local dragging, dragInput, dragStart, startPos
@@ -138,7 +133,6 @@ local function makeDraggable(frame, handle)
     end)
 end
 
--- MAIN PANEL
 local MainPanel = Instance.new("Frame")
 MainPanel.Name = "MainPanel"
 MainPanel.Size = UDim2.new(0, 480, 0, 280)
@@ -154,7 +148,6 @@ local PanelStroke = Instance.new("UIStroke", MainPanel)
 PanelStroke.Thickness = 2.5
 PanelStroke.Color = currentTheme.Primary
 
--- Header
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 38)
 Header.BackgroundColor3 = currentTheme.Header
@@ -167,7 +160,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PHHUB v3.0 (Mobile)"
+Title.Text = "PHHUB v3.1 (Expansion)"
 Title.TextColor3 = currentTheme.Primary
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
@@ -199,7 +192,6 @@ CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.TextSize = 16
 CloseBtn.Parent = Controls
 
--- Body & Sidebar
 local Body = Instance.new("Frame")
 Body.Size = UDim2.new(1, 0, 1, -38)
 Body.Position = UDim2.new(0, 0, 0, 38)
@@ -223,7 +215,6 @@ Content.Position = UDim2.new(0, 110, 0, 0)
 Content.BackgroundTransparency = 1
 Content.Parent = Body
 
--- MINIBOX
 local MiniBox = Instance.new("TextButton")
 MiniBox.Name = "MiniBox"
 MiniBox.Size = UDim2.new(0, 55, 0, 55)
@@ -245,6 +236,20 @@ MiniStroke.Color = currentTheme.Primary
 makeDraggable(MainPanel, Header)
 makeDraggable(MiniBox)
 
+-- ESP Setup Logic
+local espFolder = Instance.new("Folder")
+espFolder.Name = "PHHubESP"
+espFolder.Parent = CoreGui
+local espEnabled = false
+
+local function updateESPColors()
+    for _, child in pairs(espFolder:GetChildren()) do
+        if child:IsA("Highlight") then
+            child.FillColor = currentTheme.Primary
+        end
+    end
+end
+
 local function applyTheme(themeKey)
     currentThemeKey = themeKey
     currentTheme = Themes[themeKey]
@@ -256,6 +261,8 @@ local function applyTheme(themeKey)
     MiniBox.BackgroundColor3 = currentTheme.Header
     MiniBox.TextColor3 = currentTheme.Primary
     MiniStroke.Color = currentTheme.Primary
+    
+    updateESPColors() -- Update ESP when theme changes
 
     for _, item in ipairs(registeredElements) do
         if item.Type == "TabBtn" and item.IsActive then
@@ -264,7 +271,6 @@ local function applyTheme(themeKey)
     end
 end
 
--- TAB SYSTEM
 local tabs = {}
 local activeTab = nil
 
@@ -321,7 +327,6 @@ local function createTab(key, isFirst)
     return tabPane
 end
 
--- UI HELPERS
 local function createToggle(parent, customText, callback)
     local item = Instance.new("Frame")
     item.BackgroundColor3 = currentTheme.Item
@@ -333,13 +338,14 @@ local function createToggle(parent, customText, callback)
     label.Size = UDim2.new(0.65, 0, 1, 0)
     label.Position = UDim2.new(0, 8, 0, 0)
     label.BackgroundTransparency = 1
-    label.Text = customText
+    label.Text = langs.en[customText] or customText
     label.TextColor3 = Color3.fromRGB(226, 226, 233)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 10
     label.TextWrapped = true
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = item
+    table.insert(registeredElements, { Node = label, Key = customText, Type = "Text" })
 
     local sw = Instance.new("TextButton")
     sw.Size = UDim2.new(0, 34, 0, 18)
@@ -481,14 +487,12 @@ local function createSlider(parent, text, callback)
     end)
 end
 
--- POPULATE TABS
 local tabFarm = createTab("farm", true)
 local tabGameList = createTab("gamelist", false)
 local tabSet = createTab("set", false)
 local tabThemes = createTab("themes", false)
 local tabScripts = createTab("scripts", false)
 
--- FARMING TAB DYNAMIC LOGIC
 local function renderFarmingTab()
     for _, child in ipairs(tabFarm:GetChildren()) do
         if not child:IsA("UIGridLayout") then child:Destroy() end
@@ -519,7 +523,6 @@ local function renderFarmingTab()
 end
 renderFarmingTab()
 
--- GAME LIST TAB
 createInput(tabGameList, "search", function(val) end)
 for gameKey, gData in pairs(gameDatabase) do
     createButton(tabGameList, gData.name, function()
@@ -529,9 +532,11 @@ for gameKey, gData in pairs(gameDatabase) do
     end)
 end
 
--- SETTINGS TAB (FUNCTIONAL IMPLEMENTATIONS - FIXED)
+-- =========================================
+-- 🔥 SETTINGS & UTILITY TAB (WITH NEW FEATURES)
+-- =========================================
 
--- 1. Fly GUI
+-- 1. Fly
 createButton(tabSet, "fly", function()
     showNotification("🕊️ Loading Fly GUI...")
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))() end)
@@ -555,19 +560,84 @@ createToggle(tabSet, "noclip", function(state)
     end
 end)
 
--- 3. Dex Explorer (FIXED: Using Bypassed Dark Dex V3 which is much more stable)
+-- ✨ NEW: 3. Infinite Jump
+local infJumpConnection
+createToggle(tabSet, "infjump", function(state)
+    if state then
+        showNotification("🚀 Infinite Jump Enabled")
+        infJumpConnection = UserInputService.JumpRequest:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
+    else
+        showNotification("⚓ Infinite Jump Disabled")
+        if infJumpConnection then infJumpConnection:Disconnect() end
+    end
+end)
+
+-- ✨ NEW: 4. Player ESP
+local function addHighlight(character)
+    if not espEnabled then return end
+    if not character:FindFirstChild("PHHighlight") then
+        local hl = Instance.new("Highlight")
+        hl.Name = "PHHighlight"
+        hl.FillColor = currentTheme.Primary
+        hl.OutlineColor = Color3.new(1, 1, 1)
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+        hl.Parent = character
+        
+        -- Store a reference in the folder for easy cleanup
+        local ref = Instance.new("ObjectValue")
+        ref.Name = character.Name
+        ref.Value = hl
+        ref.Parent = espFolder
+    end
+end
+
+local function removeHighlight(character)
+    if character:FindFirstChild("PHHighlight") then
+        character.PHHighlight:Destroy()
+    end
+    if espFolder:FindFirstChild(character.Name) then
+        espFolder[character.Name]:Destroy()
+    end
+end
+
+createToggle(tabSet, "esp", function(state)
+    espEnabled = state
+    if state then
+        showNotification("👁️ Player ESP Enabled")
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                addHighlight(player.Character)
+            end
+        end
+        Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(addHighlight)
+        end)
+    else
+        showNotification("❌ Player ESP Disabled")
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Character then removeHighlight(player.Character) end
+        end
+    end
+end)
+
+-- 5. Dex
 createButton(tabSet, "dex", function()
     showNotification("📂 Loading Dark Dex V3...")
     pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua", true))() end)
 end)
 
--- 4. Cobalt (Remote Spy) (FIXED: Using user provided link)
+-- 6. Cobalt
 createButton(tabSet, "cobalt", function()
     showNotification("🔵 Loading Cobalt...")
     pcall(function() loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))() end)
 end)
 
--- 5. Speed Input
+-- 7. Speed
 createInput(tabSet, "speed", function(val)
     local num = tonumber(val)
     if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -576,12 +646,22 @@ createInput(tabSet, "speed", function(val)
     end
 end)
 
--- 6. Music / Song ID Input (FIXED: Bound to SoundService)
+-- ✨ NEW: 8. Jump Power
+createInput(tabSet, "jump", function(val)
+    local num = tonumber(val)
+    if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.UseJumpPower = true -- required for some modern games
+        LocalPlayer.Character.Humanoid.JumpPower = num
+        showNotification("🆙 JumpPower Set to: " .. num)
+    end
+end)
+
+-- 9. Music
 createInput(tabSet, "robloxId", function(val)
-    local id = string.match(val, "%d+") -- extract numbers only
+    local id = string.match(val, "%d+")
     if id then
         CustomMusic.SoundId = "rbxassetid://" .. id
-        CustomMusic.TimePosition = 0 -- Reset song to start
+        CustomMusic.TimePosition = 0
         CustomMusic:Play()
         showNotification("🎵 Playing Music ID: " .. id)
     else
@@ -589,13 +669,20 @@ createInput(tabSet, "robloxId", function(val)
     end
 end)
 
--- 7. Adjustable Volume Slider
+-- ✨ NEW: 10. Rejoin Server
+createButton(tabSet, "rejoin", function()
+    showNotification("🔄 Rejoining Server...")
+    task.wait(1)
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+
+-- 11. Volume
 createSlider(tabSet, "🔊 Global Volume", function(val)
     MasterVolume = val
     CustomMusic.Volume = val
 end)
 
--- Translate Button
+-- 12. Translate
 createButton(tabSet, "trans", function()
     langIndex = (langIndex % #langCodes) + 1
     local code = langCodes[langIndex]
@@ -610,8 +697,8 @@ createButton(tabSet, "trans", function()
     showNotification("Language: " .. code:upper())
 end)
 
+-- =========================================
 
--- THEMES TAB
 for tKey, tData in pairs(Themes) do
     createButton(tabThemes, tData.Name, function()
         applyTheme(tKey)
@@ -619,7 +706,6 @@ for tKey, tData in pairs(Themes) do
     end)
 end
 
--- SCRIPT SAVER TAB
 tabScripts.UIGridLayout:Destroy()
 local scriptListLayout = Instance.new("UIListLayout", tabScripts)
 scriptListLayout.Padding = UDim.new(0, 6)
@@ -752,7 +838,6 @@ SaveBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- MINIMIZE & CLOSE
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 MinBtn.MouseButton1Click:Connect(function()
     playSound("rbxassetid://6895079853")
@@ -766,7 +851,6 @@ MiniBox.MouseButton1Click:Connect(function()
     MainPanel.Position = UDim2.new(0.5, -240, 0.5, -140)
 end)
 
--- LOADING SCREEN
 local LoadingFrame = Instance.new("Frame")
 LoadingFrame.Size = UDim2.new(0, 450, 0, 260)
 LoadingFrame.Position = UDim2.new(0.5, -225, 0.5, -130)
@@ -783,7 +867,7 @@ local LTitle = Instance.new("TextLabel")
 LTitle.Size = UDim2.new(1, 0, 0, 40)
 LTitle.Position = UDim2.new(0, 0, 0, 40)
 LTitle.BackgroundTransparency = 1
-LTitle.Text = "PHHUB v3.0 (Mobile)"
+LTitle.Text = "PHHUB v3.1 (Expansion)"
 LTitle.TextColor3 = currentTheme.Primary
 LTitle.Font = Enum.Font.SourceSansBold
 LTitle.TextSize = 24
@@ -793,7 +877,7 @@ local LSub = Instance.new("TextLabel")
 LSub.Size = UDim2.new(1, 0, 0, 20)
 LSub.Position = UDim2.new(0, 0, 0, 80)
 LSub.BackgroundTransparency = 1
-LSub.Text = "AURA BYPASS INTEGRATION"
+LSub.Text = "UNIVERSAL TOOLS INTEGRATION"
 LSub.TextColor3 = Color3.fromRGB(138, 143, 157)
 LSub.Font = Enum.Font.SourceSans
 LSub.TextSize = 10
@@ -839,11 +923,11 @@ local motivations = {
 }
 
 local logs = {
-    "Authenticating with backend servers...",
-    "Loading Game List configurations...",
-    "Injecting UI Overlays & Themes...",
-    "Finalizing dynamic structures...",
-    "Bypass Complete. Welcome back!"
+    "Loading Universal Cheats...",
+    "Injecting ESP & Movement Modules...",
+    "Syncing UI Overlays & Themes...",
+    "Finalizing UI structures...",
+    "Ready! Welcome to PHHub."
 }
 
 task.spawn(function()
