@@ -1,11 +1,11 @@
--- PHHUB v3.0 - Roblox Lua Conversion
+-- PHHUB v3.0 - Roblox Lua Conversion (Mobile Optimized & Functional)
 
--- 1. CLEANUP (Tanggalin ang lumang instance kapag may umiiral na)
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 local TargetParent = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
@@ -14,110 +14,42 @@ if TargetParent:FindFirstChild("PHHubV3") then
     TargetParent.PHHubV3:Destroy()
 end
 
--- 2. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PHHubV3"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
--- 3. THEME DATABASE
+-- GLOBAL VOLUME & CUSTOM MUSIC SETUP
+local MasterVolume = 0.5
+local CustomMusic = Instance.new("Sound")
+CustomMusic.Parent = ScreenGui
+CustomMusic.Looped = true
+CustomMusic.Volume = MasterVolume
+
 local Themes = {
-    cyberpunk = {
-        Name = "🤖 Cyberpunk (Default)",
-        Primary = Color3.fromRGB(252, 209, 22),
-        Bg = Color3.fromRGB(10, 11, 14),
-        Header = Color3.fromRGB(18, 20, 26),
-        Sidebar = Color3.fromRGB(8, 9, 11),
-        Item = Color3.fromRGB(25, 27, 34),
-        Text = Color3.fromRGB(252, 209, 22)
-    },
-    hk = {
-        Name = "🎀 Hello Kitty",
-        Primary = Color3.fromRGB(255, 102, 163),
-        Bg = Color3.fromRGB(255, 235, 240),
-        Header = Color3.fromRGB(255, 204, 217),
-        Sidebar = Color3.fromRGB(255, 230, 235),
-        Item = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(255, 26, 117)
-    },
-    matrix = {
-        Name = "💻 Hacker Matrix",
-        Primary = Color3.fromRGB(0, 255, 0),
-        Bg = Color3.fromRGB(10, 20, 10),
-        Header = Color3.fromRGB(15, 30, 15),
-        Sidebar = Color3.fromRGB(5, 15, 5),
-        Item = Color3.fromRGB(15, 35, 15),
-        Text = Color3.fromRGB(0, 255, 0)
-    },
-    space = {
-        Name = "🌌 Cosmic Space",
-        Primary = Color3.fromRGB(0, 229, 255),
-        Bg = Color3.fromRGB(10, 15, 25),
-        Header = Color3.fromRGB(15, 25, 40),
-        Sidebar = Color3.fromRGB(5, 10, 20),
-        Item = Color3.fromRGB(20, 30, 50),
-        Text = Color3.fromRGB(0, 229, 255)
-    },
-    doom = {
-        Name = "👹 Doom / Hell",
-        Primary = Color3.fromRGB(255, 0, 0),
-        Bg = Color3.fromRGB(20, 10, 10),
-        Header = Color3.fromRGB(30, 10, 10),
-        Sidebar = Color3.fromRGB(15, 5, 5),
-        Item = Color3.fromRGB(35, 15, 15),
-        Text = Color3.fromRGB(255, 50, 50)
-    },
-    onepiece = {
-        Name = "🏴‍☠️ One Piece",
-        Primary = Color3.fromRGB(255, 183, 0),
-        Bg = Color3.fromRGB(20, 15, 10),
-        Header = Color3.fromRGB(30, 20, 10),
-        Sidebar = Color3.fromRGB(15, 10, 5),
-        Item = Color3.fromRGB(35, 25, 15),
-        Text = Color3.fromRGB(255, 183, 0)
-    },
-    naruto = {
-        Name = "🦊 Naruto",
-        Primary = Color3.fromRGB(255, 115, 0),
-        Bg = Color3.fromRGB(20, 12, 8),
-        Header = Color3.fromRGB(30, 18, 10),
-        Sidebar = Color3.fromRGB(15, 8, 5),
-        Item = Color3.fromRGB(35, 20, 10),
-        Text = Color3.fromRGB(255, 115, 0)
-    },
-    major = {
-        Name = "⚾ Major (Goro)",
-        Primary = Color3.fromRGB(0, 132, 255),
-        Bg = Color3.fromRGB(10, 15, 25),
-        Header = Color3.fromRGB(15, 25, 45),
-        Sidebar = Color3.fromRGB(5, 10, 20),
-        Item = Color3.fromRGB(15, 30, 55),
-        Text = Color3.fromRGB(0, 132, 255)
-    },
-    jjk = {
-        Name = "🤞 Jujutsu Kaisen",
-        Primary = Color3.fromRGB(160, 32, 240),
-        Bg = Color3.fromRGB(15, 10, 20),
-        Header = Color3.fromRGB(25, 15, 35),
-        Sidebar = Color3.fromRGB(10, 5, 15),
-        Item = Color3.fromRGB(30, 15, 40),
-        Text = Color3.fromRGB(160, 32, 240)
-    }
+    cyberpunk = { Name = "🤖 Cyberpunk (Default)", Primary = Color3.fromRGB(252, 209, 22), Bg = Color3.fromRGB(10, 11, 14), Header = Color3.fromRGB(18, 20, 26), Sidebar = Color3.fromRGB(8, 9, 11), Item = Color3.fromRGB(25, 27, 34), Text = Color3.fromRGB(252, 209, 22) },
+    hk = { Name = "🎀 Hello Kitty", Primary = Color3.fromRGB(255, 102, 163), Bg = Color3.fromRGB(255, 235, 240), Header = Color3.fromRGB(255, 204, 217), Sidebar = Color3.fromRGB(255, 230, 235), Item = Color3.fromRGB(255, 255, 255), Text = Color3.fromRGB(255, 26, 117) },
+    matrix = { Name = "💻 Hacker Matrix", Primary = Color3.fromRGB(0, 255, 0), Bg = Color3.fromRGB(10, 20, 10), Header = Color3.fromRGB(15, 30, 15), Sidebar = Color3.fromRGB(5, 15, 5), Item = Color3.fromRGB(15, 35, 15), Text = Color3.fromRGB(0, 255, 0) },
+    space = { Name = "🌌 Cosmic Space", Primary = Color3.fromRGB(0, 229, 255), Bg = Color3.fromRGB(10, 15, 25), Header = Color3.fromRGB(15, 25, 40), Sidebar = Color3.fromRGB(5, 10, 20), Item = Color3.fromRGB(20, 30, 50), Text = Color3.fromRGB(0, 229, 255) },
+    doom = { Name = "👹 Doom / Hell", Primary = Color3.fromRGB(255, 0, 0), Bg = Color3.fromRGB(20, 10, 10), Header = Color3.fromRGB(30, 10, 10), Sidebar = Color3.fromRGB(15, 5, 5), Item = Color3.fromRGB(35, 15, 15), Text = Color3.fromRGB(255, 50, 50) },
+    onepiece = { Name = "🏴‍☠️ One Piece", Primary = Color3.fromRGB(255, 183, 0), Bg = Color3.fromRGB(20, 15, 10), Header = Color3.fromRGB(30, 20, 10), Sidebar = Color3.fromRGB(15, 10, 5), Item = Color3.fromRGB(35, 25, 15), Text = Color3.fromRGB(255, 183, 0) },
+    naruto = { Name = "🦊 Naruto", Primary = Color3.fromRGB(255, 115, 0), Bg = Color3.fromRGB(20, 12, 8), Header = Color3.fromRGB(30, 18, 10), Sidebar = Color3.fromRGB(15, 8, 5), Item = Color3.fromRGB(35, 20, 10), Text = Color3.fromRGB(255, 115, 0) },
+    major = { Name = "⚾ Major (Goro)", Primary = Color3.fromRGB(0, 132, 255), Bg = Color3.fromRGB(10, 15, 25), Header = Color3.fromRGB(15, 25, 45), Sidebar = Color3.fromRGB(5, 10, 20), Item = Color3.fromRGB(15, 30, 55), Text = Color3.fromRGB(0, 132, 255) },
+    jjk = { Name = "🤞 Jujutsu Kaisen", Primary = Color3.fromRGB(160, 32, 240), Bg = Color3.fromRGB(15, 10, 20), Header = Color3.fromRGB(25, 15, 35), Sidebar = Color3.fromRGB(10, 5, 15), Item = Color3.fromRGB(30, 15, 40), Text = Color3.fromRGB(160, 32, 240) }
 }
 
 local currentThemeKey = "cyberpunk"
 local currentTheme = Themes[currentThemeKey]
 
--- 4. LANGUAGES & TRANSLATION
 local langIndex = 1
 local langCodes = {"en", "tl", "id"}
 local langs = {
-    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt", trans = "🌐 Lang: EN", robloxId = "🆔 Roblox ID Input", speed = "⚡ Speed", search = "🔍 Search Game..." },
-    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt", trans = "🌐 Wika: TL", robloxId = "🆔 Roblox ID Input", speed = "⚡ Bilis", search = "🔍 Hanapin ang Laro..." },
-    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt", trans = "🌐 Bahasa: ID", robloxId = "🆔 Input ID Roblox", speed = "⚡ Kecepatan", search = "🔍 Cari Game..." }
+    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt (RSpy)", trans = "🌐 Lang: EN", robloxId = "🎵 Music ID Input", speed = "⚡ Set WalkSpeed", search = "🔍 Search Game..." },
+    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan Cobalt (RSpy)", trans = "🌐 Wika: TL", robloxId = "🎵 Music ID Input", speed = "⚡ Bilis ng Lakad", search = "🔍 Hanapin ang Laro..." },
+    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt (RSpy)", trans = "🌐 Bahasa: ID", robloxId = "🎵 Input Music ID", speed = "⚡ Atur Kecepatan", search = "🔍 Cari Game..." }
 }
 
--- 5. GAME DATABASE
+-- GAME DATABASE (Untouched)
 local gameDatabase = {
     garden2 = { name = "Grow a Garden 2", cheats = {"🌾 Auto Collect", "🌱 Auto Plant", "💰 Auto Buy Upgrades", "🚜 Auto Harvest"} },
     brainrot = { name = "Brainrot Simulator", cheats = {"🧠 Auto Brainwash", "🚽 Spam Skibidi", "🕶️ Collect Rizz", "💀 Auto Farm Brains"} },
@@ -129,7 +61,7 @@ local gameDatabase = {
 local selectedGame = nil
 local registeredElements = {}
 
--- 6. NOTIFICATION SYSTEM
+-- NOTIFICATIONS
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Size = UDim2.new(0, 200, 0, 35)
 NotifFrame.Position = UDim2.new(1, -220, 0, 20)
@@ -147,7 +79,6 @@ NotifText.BackgroundTransparency = 1
 NotifText.TextColor3 = Color3.fromRGB(0, 0, 0)
 NotifText.Font = Enum.Font.SourceSansBold
 NotifText.TextSize = 14
-NotifText.Text = "Notification"
 NotifText.TextTransparency = 1
 NotifText.ZIndex = 101
 NotifText.Parent = NotifFrame
@@ -156,23 +87,23 @@ local function showNotification(text)
     NotifText.Text = text
     TweenService:Create(NotifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
     TweenService:Create(NotifText, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    task.delay(2, function()
+    task.delay(2.5, function()
         TweenService:Create(NotifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
         TweenService:Create(NotifText, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
     end)
 end
 
--- 7. SOUND UTILITY
+-- AUDIO PLAYER
 local function playSound(soundId)
     local sound = Instance.new("Sound")
     sound.SoundId = soundId
-    sound.Volume = 0.5
+    sound.Volume = MasterVolume
     sound.Parent = ScreenGui
     sound:Play()
     sound.Ended:Connect(function() sound:Destroy() end)
 end
 
--- 8. DRAGGABLE FUNCTION
+-- DRAGGABLE MAKER
 local function makeDraggable(frame, handle)
     handle = handle or frame
     local dragging, dragInput, dragStart, startPos
@@ -183,19 +114,15 @@ local function makeDraggable(frame, handle)
             dragStart = input.Position
             startPos = frame.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
     handle.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
@@ -204,41 +131,40 @@ local function makeDraggable(frame, handle)
     end)
 end
 
--- 9. MAIN PANEL STRUCTURE
+-- MAIN PANEL (RESIZED FOR MOBILE: 480x280)
 local MainPanel = Instance.new("Frame")
 MainPanel.Name = "MainPanel"
-MainPanel.Size = UDim2.new(0, 580, 0, 380)
-MainPanel.Position = UDim2.new(0.5, -290, 0.5, -190)
+MainPanel.Size = UDim2.new(0, 480, 0, 280)
+MainPanel.Position = UDim2.new(0.5, -240, 0.5, -140)
 MainPanel.BackgroundColor3 = currentTheme.Bg
 MainPanel.BorderSizePixel = 0
 MainPanel.Visible = false
 MainPanel.Parent = ScreenGui
 
 local PanelCorner = Instance.new("UICorner", MainPanel)
-PanelCorner.CornerRadius = UDim.new(0, 18)
-
+PanelCorner.CornerRadius = UDim.new(0, 14)
 local PanelStroke = Instance.new("UIStroke", MainPanel)
 PanelStroke.Thickness = 2.5
 PanelStroke.Color = currentTheme.Primary
 
 -- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 48)
+Header.Size = UDim2.new(1, 0, 0, 38)
 Header.BackgroundColor3 = currentTheme.Header
 Header.Parent = MainPanel
 
 local HeaderCorner = Instance.new("UICorner", Header)
-HeaderCorner.CornerRadius = UDim.new(0, 18)
+HeaderCorner.CornerRadius = UDim.new(0, 14)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 200, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "PHHUB v3.0"
+Title.Text = "PHHUB v3.0 (Mobile)"
 Title.TextColor3 = currentTheme.Primary
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
+Title.TextSize = 16
 Title.Parent = Header
 
 local Controls = Instance.new("Frame")
@@ -253,7 +179,7 @@ MinBtn.BackgroundTransparency = 1
 MinBtn.Text = "—"
 MinBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
 MinBtn.Font = Enum.Font.SourceSansBold
-MinBtn.TextSize = 18
+MinBtn.TextSize = 16
 MinBtn.Parent = Controls
 
 local CloseBtn = Instance.new("TextButton")
@@ -263,18 +189,18 @@ CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 165, 181)
 CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 18
+CloseBtn.TextSize = 16
 CloseBtn.Parent = Controls
 
 -- Body & Sidebar
 local Body = Instance.new("Frame")
-Body.Size = UDim2.new(1, 0, 1, -48)
-Body.Position = UDim2.new(0, 0, 0, 48)
+Body.Size = UDim2.new(1, 0, 1, -38)
+Body.Position = UDim2.new(0, 0, 0, 38)
 Body.BackgroundTransparency = 1
 Body.Parent = MainPanel
 
 local Sidebar = Instance.new("ScrollingFrame")
-Sidebar.Size = UDim2.new(0, 150, 1, 0)
+Sidebar.Size = UDim2.new(0, 110, 1, 0)
 Sidebar.BackgroundColor3 = currentTheme.Sidebar
 Sidebar.BorderSizePixel = 0
 Sidebar.ScrollBarThickness = 2
@@ -285,27 +211,26 @@ SidebarLayout.Padding = UDim.new(0, 5)
 SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -150, 1, 0)
-Content.Position = UDim2.new(0, 150, 0, 0)
+Content.Size = UDim2.new(1, -110, 1, 0)
+Content.Position = UDim2.new(0, 110, 0, 0)
 Content.BackgroundTransparency = 1
 Content.Parent = Body
 
--- 10. MINIBOX (MINIMIZE BUTTON WITH THEME COLOR SYNC)
+-- MINIBOX
 local MiniBox = Instance.new("TextButton")
 MiniBox.Name = "MiniBox"
-MiniBox.Size = UDim2.new(0, 65, 0, 65)
-MiniBox.Position = UDim2.new(1, -85, 1, -85)
+MiniBox.Size = UDim2.new(0, 55, 0, 55)
+MiniBox.Position = UDim2.new(1, -70, 1, -70)
 MiniBox.BackgroundColor3 = currentTheme.Header
 MiniBox.Text = "PH"
 MiniBox.TextColor3 = currentTheme.Primary
 MiniBox.Font = Enum.Font.SourceSansBold
-MiniBox.TextSize = 22
+MiniBox.TextSize = 18
 MiniBox.Visible = false
 MiniBox.Parent = ScreenGui
 
 local MiniCorner = Instance.new("UICorner", MiniBox)
-MiniCorner.CornerRadius = UDim.new(0, 18)
-
+MiniCorner.CornerRadius = UDim.new(0, 14)
 local MiniStroke = Instance.new("UIStroke", MiniBox)
 MiniStroke.Thickness = 2.5
 MiniStroke.Color = currentTheme.Primary
@@ -313,23 +238,18 @@ MiniStroke.Color = currentTheme.Primary
 makeDraggable(MainPanel, Header)
 makeDraggable(MiniBox)
 
--- Theme Updater Function (Kasama ang Minibox Update)
 local function applyTheme(themeKey)
     currentThemeKey = themeKey
     currentTheme = Themes[themeKey]
-
     MainPanel.BackgroundColor3 = currentTheme.Bg
     PanelStroke.Color = currentTheme.Primary
     Header.BackgroundColor3 = currentTheme.Header
     Title.TextColor3 = currentTheme.Primary
     Sidebar.BackgroundColor3 = currentTheme.Sidebar
-
-    -- Awtomatikong Baguhin ang Kulay ng Minibox base sa Theme!
     MiniBox.BackgroundColor3 = currentTheme.Header
     MiniBox.TextColor3 = currentTheme.Primary
     MiniStroke.Color = currentTheme.Primary
 
-    -- Update active tab texts
     for _, item in ipairs(registeredElements) do
         if item.Type == "TabBtn" and item.IsActive then
             item.Node.TextColor3 = currentTheme.Primary
@@ -337,33 +257,34 @@ local function applyTheme(themeKey)
     end
 end
 
--- 11. TAB SYSTEM
+-- TAB SYSTEM
 local tabs = {}
 local activeTab = nil
 
 local function createTab(key, isFirst)
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0.9, 0, 0, 35)
+    tabBtn.Size = UDim2.new(0.9, 0, 0, 30)
     tabBtn.BackgroundTransparency = 1
     tabBtn.Text = langs.en[key] or key
     tabBtn.TextColor3 = isFirst and currentTheme.Primary or Color3.fromRGB(138, 143, 157)
     tabBtn.Font = Enum.Font.SourceSansBold
-    tabBtn.TextSize = 13
+    tabBtn.TextSize = 11
     tabBtn.Parent = Sidebar
 
     local tabCorner = Instance.new("UICorner", tabBtn)
     tabCorner.CornerRadius = UDim.new(0, 8)
 
     local tabPane = Instance.new("ScrollingFrame")
-    tabPane.Size = UDim2.new(1, 0, 1, 0)
+    tabPane.Size = UDim2.new(1, -10, 1, -10)
+    tabPane.Position = UDim2.new(0, 5, 0, 5)
     tabPane.BackgroundTransparency = 1
     tabPane.Visible = isFirst
-    tabPane.ScrollBarThickness = 3
+    tabPane.ScrollBarThickness = 2
     tabPane.Parent = Content
 
     local grid = Instance.new("UIGridLayout", tabPane)
-    grid.CellSize = UDim2.new(0, 195, 0, 48)
-    grid.CellPadding = UDim2.new(0, 10, 0, 10)
+    grid.CellSize = UDim2.new(0, 165, 0, 38)
+    grid.CellPadding = UDim2.new(0, 8, 0, 8)
 
     local elementObj = { Node = tabBtn, Key = key, Type = "TabBtn", IsActive = isFirst }
     table.insert(registeredElements, elementObj)
@@ -393,44 +314,42 @@ local function createTab(key, isFirst)
     return tabPane
 end
 
--- UI Element Helpers
+-- UI HELPERS
 local function createToggle(parent, customText, callback)
     local item = Instance.new("Frame")
     item.BackgroundColor3 = currentTheme.Item
     item.Parent = parent
-
     local itemCorner = Instance.new("UICorner", item)
-    itemCorner.CornerRadius = UDim.new(0, 10)
+    itemCorner.CornerRadius = UDim.new(0, 8)
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(0.65, 0, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = customText
     label.TextColor3 = Color3.fromRGB(226, 226, 233)
     label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 11
+    label.TextSize = 10
+    label.TextWrapped = true
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = item
 
     local sw = Instance.new("TextButton")
-    sw.Size = UDim2.new(0, 42, 0, 22)
-    sw.Position = UDim2.new(1, -50, 0.5, -11)
+    sw.Size = UDim2.new(0, 34, 0, 18)
+    sw.Position = UDim2.new(1, -42, 0.5, -9)
     sw.BackgroundColor3 = Color3.fromRGB(62, 68, 81)
     sw.Text = ""
     sw.Parent = item
-
     local swCorner = Instance.new("UICorner", sw)
-    swCorner.CornerRadius = UDim.new(0, 11)
+    swCorner.CornerRadius = UDim.new(0, 9)
 
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = UDim2.new(0, 3, 0.5, -8)
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.Position = UDim2.new(0, 2, 0.5, -7)
     knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     knob.Parent = sw
-
     local knobCorner = Instance.new("UICorner", knob)
-    knobCorner.CornerRadius = UDim.new(0, 8)
+    knobCorner.CornerRadius = UDim.new(0, 7)
 
     local state = false
     sw.MouseButton1Click:Connect(function()
@@ -438,10 +357,10 @@ local function createToggle(parent, customText, callback)
         playSound("rbxassetid://6895079853")
         if state then
             sw.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
-            knob.Position = UDim2.new(0, 23, 0.5, -8)
+            knob.Position = UDim2.new(0, 18, 0.5, -7)
         else
             sw.BackgroundColor3 = Color3.fromRGB(62, 68, 81)
-            knob.Position = UDim2.new(0, 3, 0.5, -8)
+            knob.Position = UDim2.new(0, 2, 0.5, -7)
         end
         callback(state)
     end)
@@ -451,9 +370,8 @@ local function createButton(parent, key, callback)
     local item = Instance.new("Frame")
     item.BackgroundColor3 = currentTheme.Item
     item.Parent = parent
-
     local itemCorner = Instance.new("UICorner", item)
-    itemCorner.CornerRadius = UDim.new(0, 10)
+    itemCorner.CornerRadius = UDim.new(0, 8)
 
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 1, 0)
@@ -461,9 +379,8 @@ local function createButton(parent, key, callback)
     btn.Text = langs.en[key] or key
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 12
+    btn.TextSize = 11
     btn.Parent = item
-
     table.insert(registeredElements, { Node = btn, Key = key, Type = "Text" })
 
     btn.MouseButton1Click:Connect(function()
@@ -477,22 +394,20 @@ local function createInput(parent, key, callback)
     local item = Instance.new("Frame")
     item.BackgroundColor3 = currentTheme.Item
     item.Parent = parent
-
     local itemCorner = Instance.new("UICorner", item)
-    itemCorner.CornerRadius = UDim.new(0, 10)
+    itemCorner.CornerRadius = UDim.new(0, 8)
 
     local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -20, 1, -10)
-    input.Position = UDim2.new(0, 10, 0, 5)
+    input.Size = UDim2.new(1, -16, 1, -8)
+    input.Position = UDim2.new(0, 8, 0, 4)
     input.BackgroundTransparency = 1
     input.PlaceholderText = langs.en[key] or key
     input.Text = ""
     input.TextColor3 = Color3.fromRGB(255, 255, 255)
     input.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
     input.Font = Enum.Font.SourceSansBold
-    input.TextSize = 12
+    input.TextSize = 11
     input.Parent = item
-
     table.insert(registeredElements, { Node = input, Key = key, Type = "Placeholder" })
 
     input.FocusLost:Connect(function()
@@ -502,49 +417,102 @@ local function createInput(parent, key, callback)
     return input
 end
 
--- 12. POPULATE TABS
+local function createSlider(parent, text, callback)
+    local item = Instance.new("Frame")
+    item.BackgroundColor3 = currentTheme.Item
+    item.Parent = parent
+    local itemCorner = Instance.new("UICorner", item)
+    itemCorner.CornerRadius = UDim.new(0, 8)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -10, 0, 15)
+    title.Position = UDim2.new(0, 5, 0, 2)
+    title.BackgroundTransparency = 1
+    title.Text = text
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 10
+    title.Parent = item
+
+    local sliderBg = Instance.new("TextButton")
+    sliderBg.Size = UDim2.new(1, -20, 0, 6)
+    sliderBg.Position = UDim2.new(0, 10, 0, 22)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    sliderBg.Text = ""
+    sliderBg.Parent = item
+    local bgCorner = Instance.new("UICorner", sliderBg)
+    bgCorner.CornerRadius = UDim.new(1, 0)
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(0.5, 0, 1, 0)
+    fill.BackgroundColor3 = currentTheme.Primary
+    fill.Parent = sliderBg
+    local fillCorner = Instance.new("UICorner", fill)
+    fillCorner.CornerRadius = UDim.new(1, 0)
+
+    local dragging = false
+    local function updateSlider(input)
+        local pos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        callback(pos)
+    end
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSlider(input)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+-- POPULATE TABS
 local tabFarm = createTab("farm", true)
 local tabGameList = createTab("gamelist", false)
 local tabSet = createTab("set", false)
 local tabThemes = createTab("themes", false)
 local tabScripts = createTab("scripts", false)
 
--- FARMING TAB DYNAMIC LOGIC
+-- FARMING TAB DYNAMIC LOGIC (Untouched)
 local function renderFarmingTab()
     for _, child in ipairs(tabFarm:GetChildren()) do
         if not child:IsA("UIGridLayout") then child:Destroy() end
     end
-
     if not selectedGame then
         local msg = Instance.new("TextLabel")
         msg.Size = UDim2.new(1, 0, 0, 50)
         msg.BackgroundTransparency = 1
-        msg.Text = "Please select a game from the Game List first."
+        msg.Text = "Please select a game first."
         msg.TextColor3 = Color3.fromRGB(138, 143, 157)
         msg.Font = Enum.Font.SourceSansItalic
-        msg.TextSize = 13
+        msg.TextSize = 11
         msg.Parent = tabFarm
         return
     end
-
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Size = UDim2.new(1, 0, 0, 25)
     title.BackgroundTransparency = 1
-    title.Text = "▶ Currently Injecting: " .. gameDatabase[selectedGame].name
+    title.Text = "▶ " .. gameDatabase[selectedGame].name
     title.TextColor3 = currentTheme.Primary
     title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 13
+    title.TextSize = 11
     title.Parent = tabFarm
 
     for _, cheat in ipairs(gameDatabase[selectedGame].cheats) do
-        createToggle(tabFarm, cheat, function(state)
-            print(cheat .. " for " .. gameDatabase[selectedGame].name .. ":", state)
-        end)
+        createToggle(tabFarm, cheat, function(state) end)
     end
 end
 renderFarmingTab()
 
--- GAME LIST TAB
+-- GAME LIST TAB (Untouched)
 createInput(tabGameList, "search", function(val) end)
 for gameKey, gData in pairs(gameDatabase) do
     createButton(tabGameList, gData.name, function()
@@ -554,19 +522,76 @@ for gameKey, gData in pairs(gameDatabase) do
     end)
 end
 
--- SETTINGS TAB
-createButton(tabSet, "fly", function() print("Execute: Fly GUI") end)
-createToggle(tabSet, "noclip", function(s) print("Noclip:", s) end)
-createButton(tabSet, "dex", function() print("Execute: Dex") end)
-createButton(tabSet, "cobalt", function() print("Execute: Cobalt") end)
-createInput(tabSet, "speed", function(v) print("Speed set:", v) end)
-createInput(tabSet, "robloxId", function(v) print("Roblox ID:", v) end)
+-- SETTINGS TAB (FUNCTIONAL IMPLEMENTATIONS)
 
+-- 1. Fly GUI
+createButton(tabSet, "fly", function()
+    showNotification("🕊️ Loading Fly GUI...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))() end)
+end)
+
+-- 2. Noclip
+local noclipConnection
+createToggle(tabSet, "noclip", function(state)
+    if state then
+        showNotification("👻 Noclip Enabled")
+        noclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then v.CanCollide = false end
+                end
+            end
+        end)
+    else
+        showNotification("🧱 Noclip Disabled")
+        if noclipConnection then noclipConnection:Disconnect() end
+    end
+end)
+
+-- 3. Dex Explorer
+createButton(tabSet, "dex", function()
+    showNotification("📂 Loading Dex Explorer...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/SpaceEX0/Bypassed/main/Dex.lua"))() end)
+end)
+
+-- 4. Cobalt (Remote Spy)
+createButton(tabSet, "cobalt", function()
+    showNotification("🔵 Loading Remote Spy...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/exxtremestuffs/SimpleSpySource/master/SimpleSpy.lua"))() end)
+end)
+
+-- 5. Speed Input
+createInput(tabSet, "speed", function(val)
+    local num = tonumber(val)
+    if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = num
+        showNotification("⚡ Speed Set to: " .. num)
+    end
+end)
+
+-- 6. Music / Song ID Input
+createInput(tabSet, "robloxId", function(val)
+    local id = string.match(val, "%d+") -- extract numbers only
+    if id then
+        CustomMusic.SoundId = "rbxassetid://" .. id
+        CustomMusic:Play()
+        showNotification("🎵 Playing Music ID: " .. id)
+    else
+        showNotification("❌ Invalid Music ID")
+    end
+end)
+
+-- 7. Adjustable Volume Slider
+createSlider(tabSet, "🔊 Global Volume", function(val)
+    MasterVolume = val
+    CustomMusic.Volume = val
+end)
+
+-- Translate Button
 createButton(tabSet, "trans", function()
     langIndex = (langIndex % #langCodes) + 1
     local code = langCodes[langIndex]
     local dict = langs[code]
-
     for _, item in ipairs(registeredElements) do
         if item.Type == "Text" or item.Type == "TabBtn" then
             item.Node.Text = dict[item.Key] or item.Key
@@ -576,6 +601,7 @@ createButton(tabSet, "trans", function()
     end
     showNotification("Language: " .. code:upper())
 end)
+
 
 -- THEMES TAB
 for tKey, tData in pairs(Themes) do
@@ -588,132 +614,116 @@ end
 -- SCRIPT SAVER TAB
 tabScripts.UIGridLayout:Destroy()
 local scriptListLayout = Instance.new("UIListLayout", tabScripts)
-scriptListLayout.Padding = UDim.new(0, 8)
+scriptListLayout.Padding = UDim.new(0, 6)
 
 local ScriptInputs = Instance.new("Frame")
-ScriptInputs.Size = UDim2.new(1, -10, 0, 110)
+ScriptInputs.Size = UDim2.new(1, -6, 0, 95)
 ScriptInputs.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
 ScriptInputs.Parent = tabScripts
-
 local ScriptInputsCorner = Instance.new("UICorner", ScriptInputs)
 ScriptInputsCorner.CornerRadius = UDim.new(0, 8)
 
 local NameInput = Instance.new("TextBox")
-NameInput.Size = UDim2.new(1, -20, 0, 30)
-NameInput.Position = UDim2.new(0, 10, 0, 8)
+NameInput.Size = UDim2.new(1, -16, 0, 25)
+NameInput.Position = UDim2.new(0, 8, 0, 6)
 NameInput.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
-NameInput.PlaceholderText = "Game / Script Name..."
+NameInput.PlaceholderText = "Game Name..."
 NameInput.Text = ""
 NameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 NameInput.Font = Enum.Font.SourceSansBold
-NameInput.TextSize = 12
+NameInput.TextSize = 10
 NameInput.Parent = ScriptInputs
 
 local CodeInput = Instance.new("TextBox")
-CodeInput.Size = UDim2.new(1, -20, 0, 30)
-CodeInput.Position = UDim2.new(0, 10, 0, 42)
+CodeInput.Size = UDim2.new(1, -16, 0, 25)
+CodeInput.Position = UDim2.new(0, 8, 0, 36)
 CodeInput.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
-CodeInput.PlaceholderText = "Paste script here..."
+CodeInput.PlaceholderText = "Paste script..."
 CodeInput.Text = ""
 CodeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 CodeInput.Font = Enum.Font.SourceSansBold
-CodeInput.TextSize = 12
+CodeInput.TextSize = 10
 CodeInput.Parent = ScriptInputs
 
 local SaveBtn = Instance.new("TextButton")
-SaveBtn.Size = UDim2.new(1, -20, 0, 25)
-SaveBtn.Position = UDim2.new(0, 10, 0, 78)
+SaveBtn.Size = UDim2.new(1, -16, 0, 22)
+SaveBtn.Position = UDim2.new(0, 8, 0, 66)
 SaveBtn.BackgroundColor3 = currentTheme.Primary
 SaveBtn.Text = "Save Script"
 SaveBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
 SaveBtn.Font = Enum.Font.SourceSansBold
-SaveBtn.TextSize = 12
+SaveBtn.TextSize = 11
 SaveBtn.Parent = ScriptInputs
 
 local SavedListFrame = Instance.new("Frame")
-SavedListFrame.Size = UDim2.new(1, -10, 0, 200)
+SavedListFrame.Size = UDim2.new(1, -6, 0, 120)
 SavedListFrame.BackgroundTransparency = 1
 SavedListFrame.Parent = tabScripts
-
 local SavedListLayout = Instance.new("UIListLayout", SavedListFrame)
 SavedListLayout.Padding = UDim.new(0, 5)
 
 local savedScripts = {}
-
 local function renderScripts()
     for _, child in ipairs(SavedListFrame:GetChildren()) do
         if not child:IsA("UIListLayout") then child:Destroy() end
     end
-
     for idx, data in ipairs(savedScripts) do
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 35)
+        row.Size = UDim2.new(1, 0, 0, 30)
         row.BackgroundColor3 = Color3.fromRGB(20, 22, 27)
         row.Parent = SavedListFrame
-
-        local rowCorner = Instance.new("UICorner", row)
-        rowCorner.CornerRadius = UDim.new(0, 5)
+        Instance.new("UICorner", row).CornerRadius = UDim.new(0, 5)
 
         local sName = Instance.new("TextLabel")
         sName.Size = UDim2.new(0.4, 0, 1, 0)
-        sName.Position = UDim2.new(0, 10, 0, 0)
+        sName.Position = UDim2.new(0, 8, 0, 0)
         sName.BackgroundTransparency = 1
         sName.Text = data.name
         sName.TextColor3 = currentTheme.Primary
         sName.Font = Enum.Font.SourceSansBold
-        sName.TextSize = 12
+        sName.TextSize = 10
         sName.TextXAlignment = Enum.TextXAlignment.Left
         sName.Parent = row
 
-        -- Execute Button
         local exeBtn = Instance.new("TextButton")
-        exeBtn.Size = UDim2.new(0, 45, 0, 25)
-        exeBtn.Position = UDim2.new(1, -145, 0.5, -12)
+        exeBtn.Size = UDim2.new(0, 35, 0, 20)
+        exeBtn.Position = UDim2.new(1, -115, 0.5, -10)
         exeBtn.BackgroundTransparency = 1
         exeBtn.Text = "▶ Exe"
         exeBtn.TextColor3 = Color3.fromRGB(0, 230, 118)
         exeBtn.Font = Enum.Font.SourceSansBold
-        exeBtn.TextSize = 11
+        exeBtn.TextSize = 10
         exeBtn.Parent = row
-
         exeBtn.MouseButton1Click:Connect(function()
             playSound("rbxassetid://6895079853")
             showNotification("▶ Executing Script!")
-            if loadstring then
-                pcall(loadstring(data.script))
-            end
+            pcall(function() loadstring(data.script)() end)
         end)
 
-        -- Copy Button
         local copyBtn = Instance.new("TextButton")
-        copyBtn.Size = UDim2.new(0, 45, 0, 25)
-        copyBtn.Position = UDim2.new(1, -95, 0.5, -12)
+        copyBtn.Size = UDim2.new(0, 35, 0, 20)
+        copyBtn.Position = UDim2.new(1, -75, 0.5, -10)
         copyBtn.BackgroundTransparency = 1
         copyBtn.Text = "📋 Copy"
         copyBtn.TextColor3 = Color3.fromRGB(0, 229, 255)
         copyBtn.Font = Enum.Font.SourceSansBold
-        copyBtn.TextSize = 11
+        copyBtn.TextSize = 10
         copyBtn.Parent = row
-
         copyBtn.MouseButton1Click:Connect(function()
             playSound("rbxassetid://6895079853")
-            if setclipboard then
-                setclipboard(data.script)
-            end
-            showNotification("✅ Script Copied to Clipboard!")
+            if setclipboard then setclipboard(data.script) end
+            showNotification("✅ Script Copied!")
         end)
 
-        -- Delete Button
         local delBtn = Instance.new("TextButton")
-        delBtn.Size = UDim2.new(0, 40, 0, 25)
-        delBtn.Position = UDim2.new(1, -45, 0.5, -12)
+        delBtn.Size = UDim2.new(0, 30, 0, 20)
+        delBtn.Position = UDim2.new(1, -35, 0.5, -10)
         delBtn.BackgroundTransparency = 1
         delBtn.Text = "🗑️ Del"
         delBtn.TextColor3 = Color3.fromRGB(255, 0, 85)
         delBtn.Font = Enum.Font.SourceSansBold
-        delBtn.TextSize = 11
+        delBtn.TextSize = 10
         delBtn.Parent = row
-
         delBtn.MouseButton1Click:Connect(function()
             playSound("rbxassetid://6895079853")
             table.remove(savedScripts, idx)
@@ -734,61 +744,56 @@ SaveBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- MINIMIZE & CLOSE LOGIC
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
+-- MINIMIZE & CLOSE
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 MinBtn.MouseButton1Click:Connect(function()
     playSound("rbxassetid://6895079853")
     MainPanel.Visible = false
     MiniBox.Visible = true
 end)
-
 MiniBox.MouseButton1Click:Connect(function()
     playSound("rbxassetid://6895079853")
     MiniBox.Visible = false
     MainPanel.Visible = true
-    MainPanel.Position = UDim2.new(0.5, -290, 0.5, -190)
+    MainPanel.Position = UDim2.new(0.5, -240, 0.5, -140)
 end)
 
--- 13. LOADING SCREEN LOGIC
+-- LOADING SCREEN (RESIZED FOR MOBILE)
 local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Size = UDim2.new(0, 550, 0, 350)
-LoadingFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
+LoadingFrame.Size = UDim2.new(0, 450, 0, 260)
+LoadingFrame.Position = UDim2.new(0.5, -225, 0.5, -130)
 LoadingFrame.BackgroundColor3 = Color3.fromRGB(8, 9, 11)
 LoadingFrame.Parent = ScreenGui
 
 local LoadingCorner = Instance.new("UICorner", LoadingFrame)
-LoadingCorner.CornerRadius = UDim.new(0, 18)
-
+LoadingCorner.CornerRadius = UDim.new(0, 14)
 local LoadingStroke = Instance.new("UIStroke", LoadingFrame)
 LoadingStroke.Thickness = 2.5
 LoadingStroke.Color = currentTheme.Primary
 
 local LTitle = Instance.new("TextLabel")
 LTitle.Size = UDim2.new(1, 0, 0, 40)
-LTitle.Position = UDim2.new(0, 0, 0, 50)
+LTitle.Position = UDim2.new(0, 0, 0, 40)
 LTitle.BackgroundTransparency = 1
-LTitle.Text = "PHHUB v3.0"
+LTitle.Text = "PHHUB v3.0 (Mobile)"
 LTitle.TextColor3 = currentTheme.Primary
 LTitle.Font = Enum.Font.SourceSansBold
-LTitle.TextSize = 28
+LTitle.TextSize = 24
 LTitle.Parent = LoadingFrame
 
 local LSub = Instance.new("TextLabel")
 LSub.Size = UDim2.new(1, 0, 0, 20)
-LSub.Position = UDim2.new(0, 0, 0, 90)
+LSub.Position = UDim2.new(0, 0, 0, 80)
 LSub.BackgroundTransparency = 1
 LSub.Text = "AURA BYPASS INTEGRATION"
 LSub.TextColor3 = Color3.fromRGB(138, 143, 157)
 LSub.Font = Enum.Font.SourceSans
-LSub.TextSize = 11
+LSub.TextSize = 10
 LSub.Parent = LoadingFrame
 
 local Track = Instance.new("Frame")
-Track.Size = UDim2.new(0.8, 0, 0, 8)
-Track.Position = UDim2.new(0.1, 0, 0.5, -4)
+Track.Size = UDim2.new(0.8, 0, 0, 6)
+Track.Position = UDim2.new(0.1, 0, 0.5, 0)
 Track.BackgroundColor3 = Color3.fromRGB(25, 27, 34)
 Track.Parent = LoadingFrame
 
@@ -796,9 +801,7 @@ local Bar = Instance.new("Frame")
 Bar.Size = UDim2.new(0, 0, 1, 0)
 Bar.BackgroundColor3 = currentTheme.Primary
 Bar.Parent = Track
-
-local BarCorner = Instance.new("UICorner", Bar)
-BarCorner.CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", Bar).CornerRadius = UDim.new(0, 3)
 
 local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1, 0, 0, 20)
@@ -807,41 +810,40 @@ Status.BackgroundTransparency = 1
 Status.Text = "Initiating core structures..."
 Status.TextColor3 = Color3.fromRGB(138, 143, 157)
 Status.Font = Enum.Font.Code
-Status.TextSize = 11
+Status.TextSize = 10
 Status.Parent = LoadingFrame
 
 local Quote = Instance.new("TextLabel")
-Quote.Size = UDim2.new(0.8, 0, 0, 40)
+Quote.Size = UDim2.new(0.8, 0, 0, 30)
 Quote.Position = UDim2.new(0.1, 0, 0.75, 0)
 Quote.BackgroundTransparency = 1
 Quote.Text = '"Motivation: Do your best, and God will do the rest."'
 Quote.TextColor3 = currentTheme.Primary
 Quote.Font = Enum.Font.SourceSansItalic
-Quote.TextSize = 13
+Quote.TextSize = 11
 Quote.Parent = LoadingFrame
 
 local motivations = {
     '"Motivation: Do your best, and God will do the rest."',
     '"Motivation: Be proud of yourself and who you are."',
     '"Motivation: Small steps every day lead to big results."',
-    '"Motivation: Believe you can and you\'re halfway there."',
-    '"Motivation: Push yourself, because no one else is going to do it for you."'
+    '"Motivation: Believe you can and you\'re halfway there."'
 }
 
 local logs = {
     "Authenticating with backend servers...",
     "Loading Game List configurations...",
     "Injecting UI Overlays & Themes...",
-    "Finalizing dynamic Cyberpunk structures...",
+    "Finalizing dynamic structures...",
     "Bypass Complete. Welcome back!"
 }
 
 task.spawn(function()
     for i, log in ipairs(logs) do
         Status.Text = log
-        TweenService:Create(Bar, TweenInfo.new(0.6), {Size = UDim2.new(i / #logs, 0, 1, 0)}):Play()
+        TweenService:Create(Bar, TweenInfo.new(0.5), {Size = UDim2.new(i / #logs, 0, 1, 0)}):Play()
         Quote.Text = motivations[math.random(1, #motivations)]
-        task.wait(0.8)
+        task.wait(0.6)
     end
     LoadingFrame:Destroy()
     MainPanel.Visible = true
