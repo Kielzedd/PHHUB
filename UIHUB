@@ -1,5 +1,5 @@
 -- PHHUB v3.0 LUA EDITION
--- Auto-Generated for Roblox
+-- Auto-Generated for Roblox (Fixed Version)
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -135,7 +135,7 @@ Minibox.MouseButton1Click:Connect(function()
     PlaySound("click")
     Minibox.Visible = false
     MainPanel.Visible = true
-    MainPanel.Position = UDim2.new(0.5, -290, 0.5, -190) -- Recenter
+    MainPanel.Position = UDim2.new(0.5, -290, 0.5, -190)
 end)
 
 -- 5. TAB SYSTEM & ELEMENTS
@@ -196,15 +196,10 @@ local function ChangeTheme(themeId)
     end
 end
 
--- Component Creators
-local function AddItem(parent, fullWidth)
+local function AddItem(parent)
     local item = Create("Frame", {Parent=parent, BackgroundColor3=Themes[CurrentTheme].item})
     Create("UICorner", {Parent=item, CornerRadius=UDim.new(0,8)})
     table.insert(ThemeElements.Items, item)
-    if fullWidth then
-        -- Force span 2 hack by changing size (UIGridLayout limitation bypass needs absolute sizing if mixed, but we'll adapt)
-        -- In Roblox UIGridLayout, spanning is hard. We will wrap fullwidth items outside grid or just let grid handle it
-    end
     return item
 end
 
@@ -241,11 +236,10 @@ local TabSettings = CreateTab("set", false)
 local TabThemes = CreateTab("themes", false)
 local TabScripts = CreateTab("scripts", false)
 
--- Farming Tab Setup
 local function RenderFarming()
     for _,v in pairs(TabFarm:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
     if not SelectedGame then
-        local msg = Create("TextLabel", {Parent=TabFarm, Size=UDim2.new(2,10,0,48), BackgroundTransparency=1, Text="Please select a game first.", TextColor3=Color3.fromRGB(138, 143, 157), Font=Enum.Font.GothamItalic, TextSize=12})
+        Create("TextLabel", {Parent=TabFarm, Size=UDim2.new(2,10,0,48), BackgroundTransparency=1, Text="Please select a game first.", TextColor3=Color3.fromRGB(138, 143, 157), Font=Enum.Font.GothamItalic, TextSize=12})
     else
         for _, cheat in pairs(GameDatabase[SelectedGame].cheats) do
             CreateToggle(TabFarm, cheat, function(s) Notify(cheat .. " -> " .. tostring(s)) end)
@@ -254,7 +248,6 @@ local function RenderFarming()
 end
 RenderFarming()
 
--- Game List Tab
 for gameKey, data in pairs(GameDatabase) do
     CreateBtn(TabGames, data.name, function()
         SelectedGame = gameKey
@@ -263,10 +256,9 @@ for gameKey, data in pairs(GameDatabase) do
     end)
 end
 
--- Settings Tab & Working GitHub Scripts
 CreateBtn(TabSettings, "fly", function()
-    Notify("Executing Fly GUI (GitHub)...")
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Nicuse/RobloxScripts/main/BypassedFly.lua"))()
+    Notify("Executing Fly GUI...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Nicuse/RobloxScripts/main/BypassedFly.lua"))() end)
 end)
 
 CreateToggle(TabSettings, "noclip", function(state)
@@ -288,12 +280,12 @@ end)
 
 CreateBtn(TabSettings, "dex", function()
     Notify("Loading Dex Explorer...")
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))() end)
 end)
 
 CreateBtn(TabSettings, "cobalt", function()
-    Notify("Loading Cobalt (Infinite Yield)...")
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    Notify("Loading Infinite Yield...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))() end)
 end)
 
 CreateBtn(TabSettings, "trans", function()
@@ -302,7 +294,6 @@ CreateBtn(TabSettings, "trans", function()
     Notify("Language updated!")
 end)
 
--- Custom Speed Button (Walkspeed)
 CreateBtn(TabSettings, "speed", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = 100
@@ -310,23 +301,20 @@ CreateBtn(TabSettings, "speed", function()
     end
 end)
 
--- Themes Tab
 for id, t in pairs(Themes) do
     CreateBtn(TabThemes, id:upper(), function()
-        PlaySound("equip")
         ChangeTheme(id)
         Notify("Theme: " .. id:upper())
     end)
 end
 
--- Script Saver Tab (Read/Write File System)
 local ScriptInputLayout = Create("Frame", {Parent=TabScripts, Size=UDim2.new(2,10,0,150), BackgroundTransparency=1})
 local ScriptName = Create("TextBox", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,30), BackgroundColor3=Color3.fromRGB(30,30,35), TextColor3=Color3.new(1,1,1), PlaceholderText="Game Name...", Font=Enum.Font.Gotham, TextSize=12, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
 local ScriptBody = Create("TextBox", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,70), Position=UDim2.new(0,0,0,35), BackgroundColor3=Color3.fromRGB(30,30,35), TextColor3=Color3.new(1,1,1), PlaceholderText="Paste script here...", Font=Enum.Font.Gotham, TextSize=12, MultiLine=true, TextYAlignment=Enum.TextYAlignment.Top, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
 local SaveBtn = Create("TextButton", {Parent=ScriptInputLayout, Size=UDim2.new(1,0,0,35), Position=UDim2.new(0,0,0,110), BackgroundColor3=Color3.fromRGB(252,209,22), TextColor3=Color3.new(0,0,0), Text="Save Script", Font=Enum.Font.GothamBold, TextSize=12, UICorner=Create("UICorner", {CornerRadius=UDim.new(0,5)})})
 
 local ScriptListArea = Create("ScrollingFrame", {Parent=TabScripts, Size=UDim2.new(2,10,0,150), BackgroundTransparency=1})
-local ListLayout = Create("UIListLayout", {Parent=ScriptListArea, Padding=UDim.new(0,5)})
+Create("UIListLayout", {Parent=ScriptListArea, Padding=UDim.new(0,5)})
 
 local function GetSavedScripts()
     if isfile and isfile("PHHUB_Scripts.json") then
@@ -352,25 +340,22 @@ local function RenderScripts()
         local del = Create("TextButton", {Parent=frame, Size=UDim2.new(0,40,1,0), Position=UDim2.new(1,-40,0,0), BackgroundTransparency=1, Text="🗑️", TextColor3=Color3.fromRGB(255, 0, 85)})
         
         exe.MouseButton1Click:Connect(function() 
-            PlaySound("click"); Notify("Executing Script..."); 
+            Notify("Executing Script...") 
             pcall(function() loadstring(sData.script)() end) 
         end)
         cpy.MouseButton1Click:Connect(function() 
-            PlaySound("click"); 
-            if setclipboard then setclipboard(sData.script); Notify("✅ Copied to Clipboard!") end
+            if setclipboard then setclipboard(sData.script); Notify("✅ Copied!") end
         end)
         del.MouseButton1Click:Connect(function()
-            PlaySound("click")
             table.remove(scripts, idx)
             SaveSavedScripts(scripts)
             RenderScripts()
-            Notify("🗑️ Script Deleted")
+            Notify("🗑️ Deleted")
         end)
     end
 end
 
 SaveBtn.MouseButton1Click:Connect(function()
-    PlaySound("click")
     if ScriptName.Text ~= "" and ScriptBody.Text ~= "" then
         local data = GetSavedScripts()
         table.insert(data, {name = ScriptName.Text, script = ScriptBody.Text})
@@ -378,7 +363,7 @@ SaveBtn.MouseButton1Click:Connect(function()
         ScriptName.Text = ""
         ScriptBody.Text = ""
         RenderScripts()
-        Notify("💾 Script Saved!")
+        Notify("💾 Saved!")
     end
 end)
 RenderScripts()
@@ -426,5 +411,4 @@ task.spawn(function()
     Notify("Successfully Injected!")
 end)
 
--- Initialize Default Theme Colors (Cyberpunk)
 ChangeTheme(CurrentTheme)
