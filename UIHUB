@@ -1,4 +1,4 @@
--- PHHUB v3.0 - Roblox Lua Conversion (Mobile Optimized & Functional)
+-- PHHUB v3.0 - Roblox Lua Conversion (Mobile Optimized & Fixed Functions)
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -6,6 +6,7 @@ local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 
 local LocalPlayer = Players.LocalPlayer
 local TargetParent = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
@@ -19,11 +20,17 @@ ScreenGui.Name = "PHHubV3"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = TargetParent
 
--- GLOBAL VOLUME & CUSTOM MUSIC SETUP
+-- GLOBAL VOLUME & CUSTOM MUSIC SETUP (FIXED)
 local MasterVolume = 0.5
-local CustomMusic = Instance.new("Sound")
-CustomMusic.Parent = ScreenGui
-CustomMusic.Looped = true
+
+-- Create or find the CustomMusic sound in SoundService so it plays properly globally
+local CustomMusic = SoundService:FindFirstChild("PHHubCustomMusic")
+if not CustomMusic then
+    CustomMusic = Instance.new("Sound")
+    CustomMusic.Name = "PHHubCustomMusic"
+    CustomMusic.Parent = SoundService
+    CustomMusic.Looped = true
+end
 CustomMusic.Volume = MasterVolume
 
 local Themes = {
@@ -44,12 +51,12 @@ local currentTheme = Themes[currentThemeKey]
 local langIndex = 1
 local langCodes = {"en", "tl", "id"}
 local langs = {
-    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt (RSpy)", trans = "🌐 Lang: EN", robloxId = "🎵 Music ID Input", speed = "⚡ Set WalkSpeed", search = "🔍 Search Game..." },
-    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan Cobalt (RSpy)", trans = "🌐 Wika: TL", robloxId = "🎵 Music ID Input", speed = "⚡ Bilis ng Lakad", search = "🔍 Hanapin ang Laro..." },
-    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt (RSpy)", trans = "🌐 Bahasa: ID", robloxId = "🎵 Input Music ID", speed = "⚡ Atur Kecepatan", search = "🔍 Cari Game..." }
+    en = { farm = "🌾 Farming", gamelist = "🎮 Game List", set = "⚙️ Settings", themes = "🎨 Themes", scripts = "💾 Scripts", fly = "🕊️ Load Fly GUI", noclip = "👻 Toggle Noclip", dex = "📂 Load Dex", cobalt = "🔵 Load Cobalt", trans = "🌐 Lang: EN", robloxId = "🎵 Music ID Input", speed = "⚡ Set WalkSpeed", search = "🔍 Search Game..." },
+    tl = { farm = "🌾 Pag-Farm", gamelist = "🎮 Listahan ng Laro", set = "⚙️ Mga Setting", themes = "🎨 Mga Tema", scripts = "💾 Mga Script", fly = "🕊️ Buksan ang Fly GUI", noclip = "👻 Tumagos (Noclip)", dex = "📂 Buksan ang Dex", cobalt = "🔵 Buksan ang Cobalt", trans = "🌐 Wika: TL", robloxId = "🎵 Music ID Input", speed = "⚡ Bilis ng Lakad", search = "🔍 Hanapin ang Laro..." },
+    id = { farm = "🌾 Bertani", gamelist = "🎮 Daftar Game", set = "⚙️ Pengaturan", themes = "🎨 Tema", scripts = "💾 Skrip", fly = "🕊️ Muat Fly GUI", noclip = "👻 Nyalakan Noclip", dex = "📂 Muat Dex", cobalt = "🔵 Muat Cobalt", trans = "🌐 Bahasa: ID", robloxId = "🎵 Input Music ID", speed = "⚡ Atur Kecepatan", search = "🔍 Cari Game..." }
 }
 
--- GAME DATABASE (Untouched)
+-- GAME DATABASE
 local gameDatabase = {
     garden2 = { name = "Grow a Garden 2", cheats = {"🌾 Auto Collect", "🌱 Auto Plant", "💰 Auto Buy Upgrades", "🚜 Auto Harvest"} },
     brainrot = { name = "Brainrot Simulator", cheats = {"🧠 Auto Brainwash", "🚽 Spam Skibidi", "🕶️ Collect Rizz", "💀 Auto Farm Brains"} },
@@ -93,7 +100,7 @@ local function showNotification(text)
     end)
 end
 
--- AUDIO PLAYER
+-- AUDIO PLAYER (For UI clicks)
 local function playSound(soundId)
     local sound = Instance.new("Sound")
     sound.SoundId = soundId
@@ -131,7 +138,7 @@ local function makeDraggable(frame, handle)
     end)
 end
 
--- MAIN PANEL (RESIZED FOR MOBILE: 480x280)
+-- MAIN PANEL
 local MainPanel = Instance.new("Frame")
 MainPanel.Name = "MainPanel"
 MainPanel.Size = UDim2.new(0, 480, 0, 280)
@@ -481,7 +488,7 @@ local tabSet = createTab("set", false)
 local tabThemes = createTab("themes", false)
 local tabScripts = createTab("scripts", false)
 
--- FARMING TAB DYNAMIC LOGIC (Untouched)
+-- FARMING TAB DYNAMIC LOGIC
 local function renderFarmingTab()
     for _, child in ipairs(tabFarm:GetChildren()) do
         if not child:IsA("UIGridLayout") then child:Destroy() end
@@ -512,7 +519,7 @@ local function renderFarmingTab()
 end
 renderFarmingTab()
 
--- GAME LIST TAB (Untouched)
+-- GAME LIST TAB
 createInput(tabGameList, "search", function(val) end)
 for gameKey, gData in pairs(gameDatabase) do
     createButton(tabGameList, gData.name, function()
@@ -522,7 +529,7 @@ for gameKey, gData in pairs(gameDatabase) do
     end)
 end
 
--- SETTINGS TAB (FUNCTIONAL IMPLEMENTATIONS)
+-- SETTINGS TAB (FUNCTIONAL IMPLEMENTATIONS - FIXED)
 
 -- 1. Fly GUI
 createButton(tabSet, "fly", function()
@@ -548,16 +555,16 @@ createToggle(tabSet, "noclip", function(state)
     end
 end)
 
--- 3. Dex Explorer
+-- 3. Dex Explorer (FIXED: Using Bypassed Dark Dex V3 which is much more stable)
 createButton(tabSet, "dex", function()
-    showNotification("📂 Loading Dex Explorer...")
-    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/SpaceEX0/Bypassed/main/Dex.lua"))() end)
+    showNotification("📂 Loading Dark Dex V3...")
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua", true))() end)
 end)
 
--- 4. Cobalt (Remote Spy)
+-- 4. Cobalt (Remote Spy) (FIXED: Using user provided link)
 createButton(tabSet, "cobalt", function()
-    showNotification("🔵 Loading Remote Spy...")
-    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/exxtremestuffs/SimpleSpySource/master/SimpleSpy.lua"))() end)
+    showNotification("🔵 Loading Cobalt...")
+    pcall(function() loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))() end)
 end)
 
 -- 5. Speed Input
@@ -569,11 +576,12 @@ createInput(tabSet, "speed", function(val)
     end
 end)
 
--- 6. Music / Song ID Input
+-- 6. Music / Song ID Input (FIXED: Bound to SoundService)
 createInput(tabSet, "robloxId", function(val)
     local id = string.match(val, "%d+") -- extract numbers only
     if id then
         CustomMusic.SoundId = "rbxassetid://" .. id
+        CustomMusic.TimePosition = 0 -- Reset song to start
         CustomMusic:Play()
         showNotification("🎵 Playing Music ID: " .. id)
     else
@@ -758,7 +766,7 @@ MiniBox.MouseButton1Click:Connect(function()
     MainPanel.Position = UDim2.new(0.5, -240, 0.5, -140)
 end)
 
--- LOADING SCREEN (RESIZED FOR MOBILE)
+-- LOADING SCREEN
 local LoadingFrame = Instance.new("Frame")
 LoadingFrame.Size = UDim2.new(0, 450, 0, 260)
 LoadingFrame.Position = UDim2.new(0.5, -225, 0.5, -130)
